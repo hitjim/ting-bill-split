@@ -3,9 +3,48 @@ package main
 import "fmt"
 import "flag"
 import "os"
+import "log"
 
 func isBadParam(p *string) bool {
 	return *p == ""
+}
+
+func checkParams(minp *string, msgp *string, megp *string) {
+	badParam := false
+
+	if isBadParam(minp) {
+		fmt.Println("minutes param is bad")
+		badParam = true
+	} else {
+		fmt.Println("minutes:", *minp)
+	}
+
+	if isBadParam(msgp) {
+		fmt.Println("messages param is bad")
+		badParam = true
+	} else {
+		fmt.Println("messages:", *msgp)
+	}
+
+	if isBadParam(megp) {
+		fmt.Println("megabytes param is bad")
+		badParam = true
+	} else {
+		fmt.Println("megabytes:", *megp)
+	}
+
+	if badParam {
+		os.Exit(1)
+	}
+}
+
+func readAndPrint(f *os.File) {
+	data := make([]byte, 100)
+	count, err := f.Read(data)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("read %d bytes: %q\n", count, data[:count])
 }
 
 func main() {
@@ -17,30 +56,24 @@ func main() {
 
 	flag.Parse()
 
-	badParam := false
+	checkParams(minPtr, msgPtr, megPtr)
 
-	if isBadParam(minPtr) {
-		fmt.Println("minutes param is bad")
-		badParam = true
-	} else {
-		fmt.Println("minutes:", *minPtr)
+	minFile, err := os.Open(*minPtr)
+	if err != nil {
+		log.Fatal(err)
 	}
 
-	if isBadParam(msgPtr) {
-		fmt.Println("messages param is bad")
-		badParam = true
-	} else {
-		fmt.Println("messages:", *msgPtr)
+	msgFile, err := os.Open(*msgPtr)
+	if err != nil {
+		log.Fatal(err)
 	}
 
-	if isBadParam(megPtr) {
-		fmt.Println("megabytes param is bad")
-		badParam = true
-	} else {
-		fmt.Println("megabytes:", *megPtr)
+	megFile, err := os.Open(*megPtr)
+	if err != nil {
+		log.Fatal(err)
 	}
 
-	if badParam {
-		os.Exit(1)
-	}
+	readAndPrint(minFile)
+	readAndPrint(msgFile)
+	readAndPrint(megFile)
 }
