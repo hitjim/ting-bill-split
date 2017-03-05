@@ -1,40 +1,25 @@
 package main
 
-import "fmt"
-import "flag"
-import "os"
-import "log"
+import (
+	"flag"
+	"fmt"
+	"log"
+	"os"
+)
 
 func isBadParam(p *string) bool {
 	return *p == ""
 }
 
-func checkParams(minp *string, msgp *string, megp *string) {
-	badParam := false
-
-	if isBadParam(minp) {
-		fmt.Println("minutes param is bad")
-		badParam = true
-	} else {
-		fmt.Println("minutes:", *minp)
-	}
-
-	if isBadParam(msgp) {
-		fmt.Println("messages param is bad")
-		badParam = true
-	} else {
-		fmt.Println("messages:", *msgp)
-	}
-
-	if isBadParam(megp) {
-		fmt.Println("megabytes param is bad")
-		badParam = true
-	} else {
-		fmt.Println("megabytes:", *megp)
-	}
-
-	if badParam {
-		os.Exit(1)
+func checkParam() func(string, *string, *bool) {
+	return func(param string, ptr *string, badParam *bool) {
+		if isBadParam(ptr) {
+			fmt.Printf("%s parameter is bad\n", param)
+		} else {
+			fmt.Printf("%s: ", param)
+			fmt.Printf(*ptr)
+			fmt.Printf("\n")
+		}
 	}
 }
 
@@ -48,7 +33,7 @@ func readAndPrint(f *os.File) {
 }
 
 func main() {
-	fmt.Println("Ting Bill Splitter\n")
+	fmt.Printf("Ting Bill Splitter\n\n")
 
 	minPtr := flag.String("minutes", "", "filename for minutes csv")
 	msgPtr := flag.String("messages", "", "filename for messages csv")
@@ -56,7 +41,23 @@ func main() {
 
 	flag.Parse()
 
-	checkParams(minPtr, msgPtr, megPtr)
+	badParam := false
+	bParamPtr := &badParam
+	paramMap := map[string]*string{
+		"minutes":   minPtr,
+		"messages":  msgPtr,
+		"megabytes": megPtr,
+	}
+
+	check := checkParam()
+
+	for k, v := range paramMap {
+		check(k, v, bParamPtr)
+	}
+
+	if badParam {
+		os.Exit(1)
+	}
 
 	minFile, err := os.Open(*minPtr)
 	if err != nil {
