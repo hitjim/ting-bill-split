@@ -7,19 +7,10 @@ import (
 	"os"
 )
 
-func isBadParam(p *string) bool {
-	return *p == ""
-}
-
-func checkParam() func(string, *string, *bool) {
-	return func(param string, ptr *string, badParam *bool) {
-		if isBadParam(ptr) {
-			fmt.Printf("%s parameter is bad\n", param)
-		} else {
-			fmt.Printf("%s: ", param)
-			fmt.Printf(*ptr)
-			fmt.Printf("\n")
-		}
+func checkParam(param string, ptr *string, badParam *bool) {
+	if *ptr == "" {
+		*badParam = true
+		fmt.Printf("%s parameter is bad\n", param)
 	}
 }
 
@@ -42,17 +33,14 @@ func main() {
 	flag.Parse()
 
 	badParam := false
-	bParamPtr := &badParam
 	paramMap := map[string]*string{
 		"minutes":   minPtr,
 		"messages":  msgPtr,
 		"megabytes": megPtr,
 	}
 
-	check := checkParam()
-
 	for k, v := range paramMap {
-		check(k, v, bParamPtr)
+		checkParam(k, v, &badParam)
 	}
 
 	if badParam {
