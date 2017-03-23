@@ -1,6 +1,10 @@
 package main
 
-import "testing"
+import (
+	"reflect"
+	"strings"
+	"testing"
+)
 
 func TestParseMinutes(t *testing.T) {
 	cases := []struct {
@@ -17,5 +21,13 @@ func TestParseMinutes(t *testing.T) {
 				"1112224444": 1,
 			},
 		},
+	}
+
+	for _, c := range cases {
+		got := parseMinutes(strings.NewReader(c.in))
+		eq := reflect.DeepEqual(got, c.want)
+		if !eq {
+			t.Errorf("parseMinutes(%q) == %q, want %q", c.in, got, c.want)
+		}
 	}
 }
