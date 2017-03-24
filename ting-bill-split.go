@@ -1,8 +1,8 @@
 package main
 
 import (
-	"bufio"
 	"encoding/csv"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -37,56 +37,57 @@ func readAndPrint(f *os.File) {
 	fmt.Printf("read %d bytes: %q\n", count, data[:count])
 }
 
-func parseMinutes(minReader io.Reader) map[string]int {
-	var m map[string]int
-	m = make(map[string]int)
+func parseMinutes(minReader io.Reader) (map[string]int, error) {
+	m := make(map[string]int)
 	r := csv.NewReader(minReader)
 
 	// Get index of important fields
-	record, err := r.Read()
+	header, err := r.Read()
 
 	if err == io.EOF {
 		fmt.Println("minutes.csv is empty!")
-		log.Fatal(err)
-	} else if err != nil {
-		fmt.Println("Error parsing minutes.csv")
-		log.Fatal(err)
+		return m, err
 	}
 
-	phoneIndex := sliceIndex(len(record), func(i int) bool { return record[i] == "Phone" })
+	if err != nil {
+		fmt.Println("Error parsing minutes.csv")
+		return m, err
+	}
+
+	phoneIndex := sliceIndex(len(header), func(i int) bool { return header[i] == "Phone" })
 
 	if phoneIndex < 0 {
-		log.Fatal("Not a properly formed header on minutes.csv file!")
+		return m, errors.New("Not a properly formed header on minutes.csv file!")
 	}
 
-	minIndex := sliceIndex(len(record), func(i int) bool { return record[i] == "Duration (min)" })
+	minIndex := sliceIndex(len(header), func(i int) bool { return header[i] == "Duration (min)" })
 
 	if minIndex < 0 {
-		log.Fatal("Not a properly formed header on minutes.csv file!")
+		return m, errors.New("Not a properly formed header on minutes.csv file!")
 	}
 
 	for {
 		record, err := r.Read()
 
-		if err == io.EOF {
-			break
+		if err != nil {
+			if err == io.EOF {
+				break
+			} else {
+				return m, err
+			}
 		}
 
 		min, err := strconv.Atoi(record[minIndex])
 		if err != nil {
-			log.Fatal(err)
+			return m, err
 		}
 
 		phone := record[phoneIndex]
 
-		if m[phone] > -1 {
-			m[phone] += min
-		} else {
-			m[phone] = min
-		}
+		m[phone] += min
 	}
 
-	return m
+	return m, nil
 }
 
 func main() {
@@ -131,6 +132,9 @@ func main() {
 	readAndPrint(msgFile)
 	readAndPrint(megFile)
 
-	minMap := parseMinutes(bufio.NewReader(minFile))
+	minMap, err := parseMinutes(minFile)
+	if err != nil {
+		log.Fatal(err)
+	}
 	fmt.Println(minMap)
 }
