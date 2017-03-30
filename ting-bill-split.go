@@ -57,13 +57,13 @@ func parseMinutes(minReader io.Reader) (map[string]int, error) {
 	phoneIndex := sliceIndex(len(header), func(i int) bool { return header[i] == "Phone" })
 
 	if phoneIndex < 0 {
-		return m, errors.New("Not a properly formed header on minutes.csv file!")
+		return m, errors.New(`missing "Phone" header in minutes csv file`)
 	}
 
 	minIndex := sliceIndex(len(header), func(i int) bool { return header[i] == "Duration (min)" })
 
 	if minIndex < 0 {
-		return m, errors.New("Not a properly formed header on minutes.csv file!")
+		return m, errors.New(`missing "Duration (min)" header in minutes csv file`)
 	}
 
 	for {
