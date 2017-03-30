@@ -72,9 +72,8 @@ func parseMinutes(minReader io.Reader) (map[string]int, error) {
 		if err != nil {
 			if err == io.EOF {
 				break
-			} else {
-				return m, err
 			}
+			return m, err
 		}
 
 		min, err := strconv.Atoi(record[minIndex])
