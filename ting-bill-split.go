@@ -27,16 +27,6 @@ func sliceIndex(limit int, predicate func(i int) bool) int {
 	return -1
 }
 
-// TODO remove after we handle all files
-func readAndPrint(f *os.File) {
-	data := make([]byte, 100)
-	count, err := f.Read(data)
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Printf("read %d bytes: %q\n", count, data[:count])
-}
-
 func parseMinutes(minReader io.Reader) (map[string]int, error) {
 	m := make(map[string]int)
 	r := csv.NewReader(minReader)
@@ -220,8 +210,6 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	readAndPrint(megFile)
 
 	minMap, err := parseMinutes(minFile)
 	if err != nil {
