@@ -89,6 +89,47 @@ func parseMinutes(minReader io.Reader) (map[string]int, error) {
 	return m, nil
 }
 
+func parseMessages(msgReader io.Reader) (map[string]int, error) {
+	m := make(map[string]int)
+	r := csv.NewReader(msgReader)
+
+	// Get index of important fields
+	header, err := r.Read()
+
+	if err == io.EOF {
+		fmt.Println("messages.csv is empty!")
+		return m, err
+	}
+
+	if err != nil {
+		fmt.Println("Error parsing messages.csv")
+		return m, err
+	}
+
+	phoneIndex := sliceIndex(len(header), func(i int) bool { return header[i] == "Phone" })
+
+	if phoneIndex < 0 {
+		return m, errors.New(`missing "Phone" header in messages csv file`)
+	}
+
+	for {
+		record, err := r.Read()
+
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			return m, err
+		}
+
+		phone := record[phoneIndex]
+
+		m[phone]++
+	}
+
+	return m, nil
+}
+
 func main() {
 	fmt.Printf("Ting Bill Splitter\n\n")
 
@@ -128,7 +169,6 @@ func main() {
 		log.Fatal(err)
 	}
 
-	readAndPrint(msgFile)
 	readAndPrint(megFile)
 
 	minMap, err := parseMinutes(minFile)
@@ -136,4 +176,10 @@ func main() {
 		log.Fatal(err)
 	}
 	fmt.Println(minMap)
+
+	msgMap, err := parseMessages(msgFile)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(msgMap)
 }

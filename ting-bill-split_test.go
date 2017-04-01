@@ -33,3 +33,31 @@ func TestParseMinutes(t *testing.T) {
 		}
 	}
 }
+
+func TestParseMessages(t *testing.T) {
+	cases := []struct {
+		in   string
+		want map[string]int
+	}{
+		{
+			`Date,Time,Phone,Nickname,Partner's Phone,Partner's Nickname,Sent/Received,Roaming,Roaming Country,Surcharges ($)
+"February 03, 2011",01:11,1112223333,Phone 1,7778889999,Phone 7,sent,no,"",0.0
+"February 03, 2011",01:12,1112223333,Phone 1,7778889999,Phone 7,received,no,"",0.0
+"February 03, 2011",01:12,1112224444,Phone 1,7778889999,Phone 7,received,no,"",0.0`,
+			map[string]int{
+				"1112223333": 2,
+				"1112224444": 1,
+			},
+		},
+	}
+
+	for _, c := range cases {
+		got, err := parseMessages(strings.NewReader(c.in))
+		if !reflect.DeepEqual(got, c.want) {
+			t.Errorf("parseMinutes(%v) == %v, want %v", c.in, got, c.want)
+		}
+		if err != nil {
+			t.Errorf("parseMinutes(%v) err, %v", c.in, err)
+		}
+	}
+}
