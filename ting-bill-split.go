@@ -27,16 +27,6 @@ func sliceIndex(limit int, predicate func(i int) bool) int {
 	return -1
 }
 
-// TODO remove after we handle all files
-func readAndPrint(f *os.File) {
-	data := make([]byte, 100)
-	count, err := f.Read(data)
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Printf("read %d bytes: %q\n", count, data[:count])
-}
-
 func parseMinutes(minReader io.Reader) (map[string]int, error) {
 	m := make(map[string]int)
 	r := csv.NewReader(minReader)
@@ -89,6 +79,99 @@ func parseMinutes(minReader io.Reader) (map[string]int, error) {
 	return m, nil
 }
 
+func parseMessages(msgReader io.Reader) (map[string]int, error) {
+	m := make(map[string]int)
+	r := csv.NewReader(msgReader)
+
+	// Get index of important fields
+	header, err := r.Read()
+
+	if err == io.EOF {
+		fmt.Println("messages.csv is empty!")
+		return m, err
+	}
+
+	if err != nil {
+		fmt.Println("Error parsing messages.csv")
+		return m, err
+	}
+
+	phoneIndex := sliceIndex(len(header), func(i int) bool { return header[i] == "Phone" })
+
+	if phoneIndex < 0 {
+		return m, errors.New(`missing "Phone" header in messages csv file`)
+	}
+
+	for {
+		record, err := r.Read()
+
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			return m, err
+		}
+
+		phone := record[phoneIndex]
+
+		m[phone]++
+	}
+
+	return m, nil
+}
+
+func parseMegabytes(megReader io.Reader) (map[string]int, error) {
+	m := make(map[string]int)
+	r := csv.NewReader(megReader)
+
+	// Get index of important fields
+	header, err := r.Read()
+
+	if err == io.EOF {
+		fmt.Println("megabytes.csv is empty!")
+		return m, err
+	}
+
+	if err != nil {
+		fmt.Println("Error parsing megabytes.csv")
+		return m, err
+	}
+
+	phoneIndex := sliceIndex(len(header), func(i int) bool { return header[i] == "Device" })
+
+	if phoneIndex < 0 {
+		return m, errors.New(`missing "Device" header in megabytes csv file`)
+	}
+
+	kbIndex := sliceIndex(len(header), func(i int) bool { return header[i] == "Kilobytes" })
+
+	if kbIndex < 0 {
+		return m, errors.New(`missing "Kilobytes" header in megabytes csv file`)
+	}
+
+	for {
+		record, err := r.Read()
+
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			return m, err
+		}
+
+		kb, err := strconv.Atoi(record[kbIndex])
+		if err != nil {
+			return m, err
+		}
+
+		phone := record[phoneIndex]
+
+		m[phone] += kb
+	}
+
+	return m, nil
+}
+
 func main() {
 	fmt.Printf("Ting Bill Splitter\n\n")
 
@@ -128,12 +211,21 @@ func main() {
 		log.Fatal(err)
 	}
 
-	readAndPrint(msgFile)
-	readAndPrint(megFile)
-
 	minMap, err := parseMinutes(minFile)
 	if err != nil {
 		log.Fatal(err)
 	}
 	fmt.Println(minMap)
+
+	msgMap, err := parseMessages(msgFile)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(msgMap)
+
+	megMap, err := parseMegabytes(megFile)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(megMap)
 }

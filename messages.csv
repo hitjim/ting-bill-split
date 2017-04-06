@@ -1,1 +1,4 @@
-messages
+Date,Time,Phone,Nickname,Partner's Phone,Partner's Nickname,Sent/Received,Roaming,Roaming Country,Surcharges ($)
+"February 03, 2011",01:11,1112223333,Phone 1,7778889999,Phone 7,sent,no,"",0.0
+"February 03, 2011",01:12,1112223333,Phone 1,7778889999,Phone 7,received,no,"",0.0
+"February 03, 2011",01:12,1112224444,Phone 1,7778889999,Phone 7,received,no,"",0.0

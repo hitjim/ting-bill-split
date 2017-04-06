@@ -1,1 +1,5 @@
-megabytes
+Date,Device,Nickname,Location,Kilobytes,Surcharges ($),Type
+"February 03, 2011",1112223333,Phone 1,United States of America,1336,0.0,4G LTE
+"February 03, 2011",1112223333,Phone 1,United States of America,2024,0.0,3G
+"February 04, 2011",1112223333,Phone 1,United States of America,1336,0.0,4G LTE
+"February 04, 2011",1112224444,Phone 2,United States of America,1532,0.0,4G LTE
