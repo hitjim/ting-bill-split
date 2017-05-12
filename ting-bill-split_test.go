@@ -90,3 +90,33 @@ func TestParseMegabytes(t *testing.T) {
 		}
 	}
 }
+
+func TestParseBills(t *testing.T) {
+	cases := []struct {
+		in   string
+		want map[string]int
+	}{
+		{
+			`minutes = 35.00
+messages = 8.00
+megabytes = 20.00
+devices = 42.00
+extras = 1.00
+fees = 12.84`,
+			map[string]int{
+				"1112223333": 4696,
+				"1112224444": 1532,
+			},
+		},
+	}
+
+	for _, c := range cases {
+		got, err := parseMegabytes(strings.NewReader(c.in))
+		if !reflect.DeepEqual(got, c.want) {
+			t.Errorf("parseMegabytes(%v) == %v, want %v", c.in, got, c.want)
+		}
+		if err != nil {
+			t.Errorf("parseMegabytes(%v) err, %v", c.in, err)
+		}
+	}
+}
