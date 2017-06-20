@@ -9,7 +9,29 @@ import (
 	"log"
 	"os"
 	"strconv"
+
+	"github.com/BurntSushi/toml"
 )
+
+type bill struct {
+	Minutes   float64 `toml:"minutes"`
+	Messages  float64 `toml:"messages"`
+	Megabytes float64 `toml:"megabytes"`
+	Devices   float64 `toml:"devices"`
+	Extras    float64 `toml:"extras"`
+	Fees      float64 `toml:"fees"`
+}
+
+func parseBill(r io.Reader) (bill, error) {
+	var b bill
+	_, err := toml.DecodeReader(r, &b)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return b, err
+}
 
 func checkParam(param string, ptr *string, badParam *bool) {
 	if *ptr == "" {
@@ -174,6 +196,20 @@ func parseMegabytes(megReader io.Reader) (map[string]int, error) {
 
 func main() {
 	fmt.Printf("Ting Bill Splitter\n\n")
+
+	f, err := os.Open("bills.toml")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	billData, err := parseBill(f)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// TODO remove this once we do something useful with it.
+	fmt.Println("billData in your face")
+	fmt.Println(billData)
 
 	minPtr := flag.String("minutes", "", "filename for minutes csv")
 	msgPtr := flag.String("messages", "", "filename for messages csv")

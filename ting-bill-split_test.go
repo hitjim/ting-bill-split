@@ -91,10 +91,10 @@ func TestParseMegabytes(t *testing.T) {
 	}
 }
 
-func TestParseBills(t *testing.T) {
+func TestParseBill(t *testing.T) {
 	cases := []struct {
 		in   string
-		want map[string]int
+		want bill
 	}{
 		{
 			`minutes = 35.00
@@ -103,20 +103,24 @@ megabytes = 20.00
 devices = 42.00
 extras = 1.00
 fees = 12.84`,
-			map[string]int{
-				"1112223333": 4696,
-				"1112224444": 1532,
+			bill{
+				Minutes:   35.00,
+				Messages:  8.00,
+				Megabytes: 20.00,
+				Devices:   42.00,
+				Extras:    1.00,
+				Fees:      12.84,
 			},
 		},
 	}
 
 	for _, c := range cases {
-		got, err := parseMegabytes(strings.NewReader(c.in))
+		got, err := parseBill(strings.NewReader(c.in))
 		if !reflect.DeepEqual(got, c.want) {
-			t.Errorf("parseMegabytes(%v) == %v, want %v", c.in, got, c.want)
+			t.Errorf("parseBill(%v) == %v, want %v", c.in, got, c.want)
 		}
 		if err != nil {
-			t.Errorf("parseMegabytes(%v) err, %v", c.in, err)
+			t.Errorf("parseBill(%v) err, %v", c.in, err)
 		}
 	}
 }
