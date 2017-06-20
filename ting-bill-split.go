@@ -24,13 +24,10 @@ type bill struct {
 
 func parseBill(r io.Reader) (bill, error) {
 	var b bill
-	_, err := toml.DecodeReader(r, &b)
-
-	if err != nil {
-		log.Fatal(err)
+	if _, err := toml.DecodeReader(r, &b); err != nil {
+		return bill{}, err
 	}
-
-	return b, err
+	return b, nil
 }
 
 func checkParam(param string, ptr *string, badParam *bool) {
@@ -197,28 +194,16 @@ func parseMegabytes(megReader io.Reader) (map[string]int, error) {
 func main() {
 	fmt.Printf("Ting Bill Splitter\n\n")
 
-	f, err := os.Open("bills.toml")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	billData, err := parseBill(f)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// TODO remove this once we do something useful with it.
-	fmt.Println("billData in your face")
-	fmt.Println(billData)
-
-	minPtr := flag.String("minutes", "", "filename for minutes csv")
-	msgPtr := flag.String("messages", "", "filename for messages csv")
-	megPtr := flag.String("megabytes", "", "filename for megabytes csv")
+	billPtr := flag.String("bills", "", "filename for bills toml - ex: -bills=\"bills.toml\"")
+	minPtr := flag.String("minutes", "", "filename for minutes csv - ex: -minutes=\"minutes.csv\"")
+	msgPtr := flag.String("messages", "", "filename for messages csv - ex: -messages=\"messages.csv\"")
+	megPtr := flag.String("megabytes", "", "filename for megabytes csv - ex: -megabytes=\"megabytes.csv\"")
 
 	flag.Parse()
 
 	badParam := false
 	paramMap := map[string]*string{
+		"bills":     billPtr,
 		"minutes":   minPtr,
 		"messages":  msgPtr,
 		"megabytes": megPtr,
@@ -231,6 +216,19 @@ func main() {
 	if badParam {
 		os.Exit(1)
 	}
+
+	billFile, err := os.Open(*billPtr)
+	if err != nil {
+		log.Fatal(err)
+	}
+	billData, err := parseBill(billFile)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// TODO remove this once we do something useful with it.
+	fmt.Println("billData in your face")
+	fmt.Println(billData)
 
 	minFile, err := os.Open(*minPtr)
 	if err != nil {
