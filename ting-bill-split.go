@@ -227,7 +227,7 @@ func main() {
 	}
 
 	// TODO remove this once we do something useful with it.
-	fmt.Println("billData in your face")
+	fmt.Println("billData ... something something ... *wanders off*")
 	fmt.Println(billData)
 
 	minFile, err := os.Open(*minPtr)
