@@ -25,11 +25,11 @@ func TestParseMinutes(t *testing.T) {
 
 	for _, c := range cases {
 		got, err := parseMinutes(strings.NewReader(c.in))
-		if !reflect.DeepEqual(got, c.want) {
-			t.Errorf("parseMinutes(%v) == %v, want %v", c.in, got, c.want)
-		}
 		if err != nil {
 			t.Errorf("parseMinutes(%v) err, %v", c.in, err)
+		}
+		if !reflect.DeepEqual(got, c.want) {
+			t.Errorf("parseMinutes(%v) == %v, want %v", c.in, got, c.want)
 		}
 	}
 }
@@ -53,11 +53,11 @@ func TestParseMessages(t *testing.T) {
 
 	for _, c := range cases {
 		got, err := parseMessages(strings.NewReader(c.in))
-		if !reflect.DeepEqual(got, c.want) {
-			t.Errorf("parseMessages(%v) == %v, want %v", c.in, got, c.want)
-		}
 		if err != nil {
 			t.Errorf("parseMessages(%v) err, %v", c.in, err)
+		}
+		if !reflect.DeepEqual(got, c.want) {
+			t.Errorf("parseMessages(%v) == %v, want %v", c.in, got, c.want)
 		}
 	}
 }
@@ -82,11 +82,45 @@ func TestParseMegabytes(t *testing.T) {
 
 	for _, c := range cases {
 		got, err := parseMegabytes(strings.NewReader(c.in))
+		if err != nil {
+			t.Errorf("parseMegabytes(%v) err, %v", c.in, err)
+		}
 		if !reflect.DeepEqual(got, c.want) {
 			t.Errorf("parseMegabytes(%v) == %v, want %v", c.in, got, c.want)
 		}
+	}
+}
+
+func TestParseBill(t *testing.T) {
+	cases := []struct {
+		in   string
+		want bill
+	}{
+		{
+			`minutes = 35.00
+messages = 8.00
+megabytes = 20.00
+devices = 42.00
+extras = 1.00
+fees = 12.84`,
+			bill{
+				Minutes:   35.00,
+				Messages:  8.00,
+				Megabytes: 20.00,
+				Devices:   42.00,
+				Extras:    1.00,
+				Fees:      12.84,
+			},
+		},
+	}
+
+	for _, c := range cases {
+		got, err := parseBill(strings.NewReader(c.in))
 		if err != nil {
-			t.Errorf("parseMegabytes(%v) err, %v", c.in, err)
+			t.Errorf("parseBill(%v) err, %v", c.in, err)
+		}
+		if !reflect.DeepEqual(got, c.want) {
+			t.Errorf("parseBill(%v) == %v, want %v", c.in, got, c.want)
 		}
 	}
 }
