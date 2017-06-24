@@ -14,12 +14,13 @@ import (
 )
 
 type bill struct {
-	Minutes   float64  `toml:"minutes"`
-	Messages  float64  `toml:"messages"`
-	Megabytes float64  `toml:"megabytes"`
-	Devices   float64  `toml:"devices"`
-	Extras    float64  `toml:"extras"`
-	Fees      float64  `toml:"fees"`
+	Minutes   float64 `toml:"minutes"`
+	Messages  float64 `toml:"messages"`
+	Megabytes float64 `toml:"megabytes"`
+	Devices   float64 `toml:"devices"`
+	Extras    float64 `toml:"extras"`
+	Fees      float64 `toml:"fees"`
+	//TODO add grand total?
 	DeviceIds []string `toml:"deviceIds"`
 }
 

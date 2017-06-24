@@ -126,3 +126,66 @@ deviceIds = [ "1112223333", "1112224444", "1112220000" ]`,
 		}
 	}
 }
+
+func TestParseMaps(t *testing.T) {
+	cases := []struct {
+		min  map[string]int
+		msg  map[string]int
+		meg  map[string]int
+		bil  bill
+		want billSplit
+	}{
+		{
+			map[string]int{
+				"1112223333": 3,
+				"1112224444": 1,
+			},
+			map[string]int{
+				"1112223333": 4696,
+				"1112224444": 1532,
+			},
+			map[string]int{
+				"1112223333": 8001,
+				"1112224444": 2999,
+			},
+			bill{
+				Minutes:   35.00,
+				Messages:  8.00,
+				Megabytes: 20.00,
+				Devices:   42.00,
+				Extras:    1.00,
+				Fees:      12.84,
+				DeviceIds: []string{"1112223333", "1112224444", "1112220000"},
+			},
+			billSplit{
+				MinSubs: map[string]float64{
+					"1112223333": 8.75,
+					"1112224444": 26.25,
+				},
+				MsgSubs: map[string]float64{
+					"1112223333": 6.03,
+					"1112224444": 1.97,
+				},
+				MegSubs: map[string]float64{
+					"1112223333": 14.55,
+					"1112224444": 5.45,
+				},
+				DeltaSubs: map[string]float64{
+					"1112223333": 18.61,
+					"1112224444": 18.61,
+					"1112220000": 18.61,
+				},
+			},
+		},
+	}
+
+	for _, c := range cases {
+		got, err := parseMaps(c.min, c.msg, c.meg, c.bil)
+		if err != nil {
+			t.Errorf("parseMaps(%v, %v, %v, %v) err, %v", c.min, c.msg, c.meg, c.bil, err)
+		}
+		if !reflect.DeepEqual(got, c.want) {
+			t.Errorf("parseMaps(%v, %v, %v, %v) == %v, want %v", c.min, c.msg, c.meg, c.bil, got, c.want)
+		}
+	}
+}
