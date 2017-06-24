@@ -4,3 +4,4 @@ megabytes = 20.00
 devices = 42.00
 extras = 1.00
 fees = 12.84
+deviceIds = [ "1112223333", "1112224444" ]

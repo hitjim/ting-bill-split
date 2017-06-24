@@ -102,7 +102,8 @@ messages = 8.00
 megabytes = 20.00
 devices = 42.00
 extras = 1.00
-fees = 12.84`,
+fees = 12.84
+deviceIds = [ "1112223333", "1112224444", "1112220000" ]`,
 			bill{
 				Minutes:   35.00,
 				Messages:  8.00,
@@ -110,6 +111,7 @@ fees = 12.84`,
 				Devices:   42.00,
 				Extras:    1.00,
 				Fees:      12.84,
+				DeviceIds: []string{"1112223333", "1112224444", "1112220000"},
 			},
 		},
 	}

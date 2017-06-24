@@ -14,12 +14,26 @@ import (
 )
 
 type bill struct {
-	Minutes   float64 `toml:"minutes"`
-	Messages  float64 `toml:"messages"`
-	Megabytes float64 `toml:"megabytes"`
-	Devices   float64 `toml:"devices"`
-	Extras    float64 `toml:"extras"`
-	Fees      float64 `toml:"fees"`
+	Minutes   float64  `toml:"minutes"`
+	Messages  float64  `toml:"messages"`
+	Megabytes float64  `toml:"megabytes"`
+	Devices   float64  `toml:"devices"`
+	Extras    float64  `toml:"extras"`
+	Fees      float64  `toml:"fees"`
+	DeviceIds []string `toml:"deviceIds"`
+}
+
+type billSplit struct {
+	MinSubs   map[string]float64
+	MsgSubs   map[string]float64
+	MegSubs   map[string]float64
+	DeltaSubs map[string]float64
+}
+
+func parseMaps(min map[string]int, msg map[string]int, meg map[string]int, bil bill) (billSplit, error) {
+	//TODO STUFF
+	var bs billSplit
+	return bs, nil
 }
 
 func parseBill(r io.Reader) (bill, error) {
@@ -221,6 +235,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	billData, err := parseBill(billFile)
 	if err != nil {
 		log.Fatal(err)
@@ -262,4 +277,11 @@ func main() {
 		log.Fatal(err)
 	}
 	fmt.Println(megMap)
+
+	//TODO take in each map and return a billSplit
+	split, err := parseMaps(minMap, msgMap, megMap, billData)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(split)
 }
