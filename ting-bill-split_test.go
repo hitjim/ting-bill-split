@@ -4,6 +4,8 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+
+	"github.com/shopspring/decimal"
 )
 
 func TestParseMinutes(t *testing.T) {
@@ -103,15 +105,56 @@ megabytes = 20.00
 devices = 42.00
 extras = 1.00
 fees = 12.84
+deviceIds = [ "1112223333", "1112224444", "1112220000" ]
+shortStrawId = "1112220000"`,
+			bill{
+				Minutes:      35.00,
+				Messages:     8.00,
+				Megabytes:    20.00,
+				Devices:      42.00,
+				Extras:       1.00,
+				Fees:         12.84,
+				DeviceIds:    []string{"1112223333", "1112224444", "1112220000"},
+				ShortStrawId: "1112220000",
+			},
+		},
+		{
+			`minutes = 35.00
+messages = 8.00
+megabytes = 20.00
+devices = 42.00
+extras = 1.00
+fees = 12.84
+deviceIds = [ "1112223333", "1112224444", "1112220000" ]
+shortStrawId = "wrongnumber"`,
+			bill{
+				Minutes:      35.00,
+				Messages:     8.00,
+				Megabytes:    20.00,
+				Devices:      42.00,
+				Extras:       1.00,
+				Fees:         12.84,
+				DeviceIds:    []string{"1112223333", "1112224444", "1112220000"},
+				ShortStrawId: "1112223333",
+			},
+		},
+		{
+			`minutes = 35.00
+messages = 8.00
+megabytes = 20.00
+devices = 42.00
+extras = 1.00
+fees = 12.84
 deviceIds = [ "1112223333", "1112224444", "1112220000" ]`,
 			bill{
-				Minutes:   35.00,
-				Messages:  8.00,
-				Megabytes: 20.00,
-				Devices:   42.00,
-				Extras:    1.00,
-				Fees:      12.84,
-				DeviceIds: []string{"1112223333", "1112224444", "1112220000"},
+				Minutes:      35.00,
+				Messages:     8.00,
+				Megabytes:    20.00,
+				Devices:      42.00,
+				Extras:       1.00,
+				Fees:         12.84,
+				DeviceIds:    []string{"1112223333", "1112224444", "1112220000"},
+				ShortStrawId: "1112223333",
 			},
 		},
 	}
@@ -149,31 +192,36 @@ func TestParseMaps(t *testing.T) {
 				"1112224444": 2999,
 			},
 			bill{
-				Minutes:   35.00,
-				Messages:  8.00,
-				Megabytes: 20.00,
-				Devices:   42.00,
-				Extras:    1.00,
-				Fees:      12.84,
-				DeviceIds: []string{"1112223333", "1112224444", "1112220000"},
+				Minutes:      35.00,
+				Messages:     8.00,
+				Megabytes:    20.00,
+				Devices:      42.00,
+				Extras:       1.00,
+				Fees:         12.84,
+				DeviceIds:    []string{"1112223333", "1112224444", "1112220000"},
+				ShortStrawId: "1112220000",
+				Total:        118.84,
 			},
 			billSplit{
-				MinSubs: map[string]float64{
-					"1112223333": 8.75,
-					"1112224444": 26.25,
+				MinSubs: map[string]decimal.Decimal{
+					"1112220000": decimal.NewFromFloat(0),
+					"1112223333": decimal.NewFromFloat(26.25),
+					"1112224444": decimal.NewFromFloat(8.75),
 				},
-				MsgSubs: map[string]float64{
-					"1112223333": 6.03,
-					"1112224444": 1.97,
+				MsgSubs: map[string]decimal.Decimal{
+					"1112220000": decimal.NewFromFloat(0),
+					"1112223333": decimal.NewFromFloat(6.03),
+					"1112224444": decimal.NewFromFloat(1.97),
 				},
-				MegSubs: map[string]float64{
-					"1112223333": 14.55,
-					"1112224444": 5.45,
+				MegSubs: map[string]decimal.Decimal{
+					"1112220000": decimal.NewFromFloat(0),
+					"1112223333": decimal.NewFromFloat(14.55),
+					"1112224444": decimal.NewFromFloat(5.45),
 				},
-				DeltaSubs: map[string]float64{
-					"1112223333": 18.61,
-					"1112224444": 18.61,
-					"1112220000": 18.61,
+				DeltaSubs: map[string]decimal.Decimal{
+					"1112223333": decimal.NewFromFloat(18.61),
+					"1112224444": decimal.NewFromFloat(18.61),
+					"1112220000": decimal.NewFromFloat(18.62),
 				},
 			},
 		},
