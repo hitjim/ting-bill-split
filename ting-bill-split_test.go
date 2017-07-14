@@ -1,10 +1,10 @@
 package main
 
 import (
-	"reflect"
 	"strings"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/shopspring/decimal"
 )
 
@@ -30,7 +30,7 @@ func TestParseMinutes(t *testing.T) {
 		if err != nil {
 			t.Errorf("parseMinutes(%v) err, %v", c.in, err)
 		}
-		if !reflect.DeepEqual(got, c.want) {
+		if !cmp.Equal(got, c.want) {
 			t.Errorf("parseMinutes(%v) == %v, want %v", c.in, got, c.want)
 		}
 	}
@@ -58,7 +58,7 @@ func TestParseMessages(t *testing.T) {
 		if err != nil {
 			t.Errorf("parseMessages(%v) err, %v", c.in, err)
 		}
-		if !reflect.DeepEqual(got, c.want) {
+		if !cmp.Equal(got, c.want) {
 			t.Errorf("parseMessages(%v) == %v, want %v", c.in, got, c.want)
 		}
 	}
@@ -87,7 +87,7 @@ func TestParseMegabytes(t *testing.T) {
 		if err != nil {
 			t.Errorf("parseMegabytes(%v) err, %v", c.in, err)
 		}
-		if !reflect.DeepEqual(got, c.want) {
+		if !cmp.Equal(got, c.want) {
 			t.Errorf("parseMegabytes(%v) == %v, want %v", c.in, got, c.want)
 		}
 	}
@@ -115,7 +115,7 @@ shortStrawId = "1112220000"`,
 				Extras:       1.00,
 				Fees:         12.84,
 				DeviceIds:    []string{"1112223333", "1112224444", "1112220000"},
-				ShortStrawId: "1112220000",
+				ShortStrawID: "1112220000",
 			},
 		},
 		{
@@ -135,7 +135,7 @@ shortStrawId = "wrongnumber"`,
 				Extras:       1.00,
 				Fees:         12.84,
 				DeviceIds:    []string{"1112223333", "1112224444", "1112220000"},
-				ShortStrawId: "1112223333",
+				ShortStrawID: "1112223333",
 			},
 		},
 		{
@@ -154,7 +154,7 @@ deviceIds = [ "1112223333", "1112224444", "1112220000" ]`,
 				Extras:       1.00,
 				Fees:         12.84,
 				DeviceIds:    []string{"1112223333", "1112224444", "1112220000"},
-				ShortStrawId: "1112223333",
+				ShortStrawID: "1112223333",
 			},
 		},
 	}
@@ -164,7 +164,7 @@ deviceIds = [ "1112223333", "1112224444", "1112220000" ]`,
 		if err != nil {
 			t.Errorf("parseBill(%v) err, %v", c.in, err)
 		}
-		if !reflect.DeepEqual(got, c.want) {
+		if !cmp.Equal(got, c.want) {
 			t.Errorf("parseBill(%v) == %v, want %v", c.in, got, c.want)
 		}
 	}
@@ -199,7 +199,7 @@ func TestParseMaps(t *testing.T) {
 				Extras:       1.00,
 				Fees:         12.84,
 				DeviceIds:    []string{"1112223333", "1112224444", "1112220000"},
-				ShortStrawId: "1112220000",
+				ShortStrawID: "1112220000",
 				Total:        118.84,
 			},
 			billSplit{
@@ -232,7 +232,7 @@ func TestParseMaps(t *testing.T) {
 		if err != nil {
 			t.Errorf("parseMaps(%v, %v, %v, %v) err, %v", c.min, c.msg, c.meg, c.bil, err)
 		}
-		if !reflect.DeepEqual(got, c.want) {
+		if !cmp.Equal(got, c.want) {
 			t.Errorf("parseMaps(%v, %v, %v, %v) == %v, want %v", c.min, c.msg, c.meg, c.bil, got, c.want)
 		}
 	}

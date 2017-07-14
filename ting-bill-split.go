@@ -22,7 +22,7 @@ type bill struct {
 	Extras       float64  `toml:"extras"`
 	Fees         float64  `toml:"fees"`
 	DeviceIds    []string `toml:"deviceIds"`
-	ShortStrawId string   `toml:"shortStrawId"`
+	ShortStrawID string   `toml:"shortStrawId"`
 	Total        float64  `toml:"total"`
 }
 
@@ -89,8 +89,8 @@ func parseMaps(min map[string]int, msg map[string]int, meg map[string]int, bil b
 
 	minSubExtra := bilMinutes.Sub(minSubSum)
 	if minSubExtra.GreaterThan(decimal.New(0, RoundPrecision)) {
-		fmt.Printf("Remainder minutes cost of $%s to deviceId %s\n", minSubExtra.String(), bil.ShortStrawId)
-		bs.MinSubs[bil.ShortStrawId].Add(minSubExtra)
+		fmt.Printf("Remainder minutes cost of $%s to deviceId %s\n", minSubExtra.String(), bil.ShortStrawID)
+		bs.MinSubs[bil.ShortStrawID].Add(minSubExtra)
 	} else {
 		fmt.Println("There was no remainder cost when splitting minutes.")
 	}
@@ -102,8 +102,8 @@ func parseMaps(min map[string]int, msg map[string]int, meg map[string]int, bil b
 
 	msgSubExtra := bilMessages.Sub(msgSubSum)
 	if msgSubExtra.GreaterThan(decimal.New(0, RoundPrecision)) {
-		fmt.Printf("Remainder messages cost of $%s to deviceId %s\n", msgSubExtra.String(), bil.ShortStrawId)
-		bs.MsgSubs[bil.ShortStrawId].Add(msgSubExtra)
+		fmt.Printf("Remainder messages cost of $%s to deviceId %s\n", msgSubExtra.String(), bil.ShortStrawID)
+		bs.MsgSubs[bil.ShortStrawID].Add(msgSubExtra)
 	} else {
 		fmt.Println("There was no remainder cost when splitting messages.")
 	}
@@ -115,8 +115,8 @@ func parseMaps(min map[string]int, msg map[string]int, meg map[string]int, bil b
 
 	megSubExtra := bilMessages.Sub(megSubSum)
 	if megSubExtra.GreaterThan(decimal.New(0, RoundPrecision)) {
-		fmt.Printf("Remainder megabytes cost of $%s to deviceId %s\n", megSubExtra.String(), bil.ShortStrawId)
-		bs.MegSubs[bil.ShortStrawId].Add(megSubExtra)
+		fmt.Printf("Remainder megabytes cost of $%s to deviceId %s\n", megSubExtra.String(), bil.ShortStrawID)
+		bs.MegSubs[bil.ShortStrawID].Add(megSubExtra)
 	} else {
 		fmt.Println("There was no remainder cost when splitting megabytes.")
 	}
@@ -128,8 +128,8 @@ func parseMaps(min map[string]int, msg map[string]int, meg map[string]int, bil b
 
 	deltaSubExtra := delta.Sub(deltaSubSum)
 	if deltaSubExtra.GreaterThan(decimal.New(0, RoundPrecision)) {
-		fmt.Printf("Remainder delta cost of $%s added to deviceId %s\n", deltaSubExtra.String(), bil.ShortStrawId)
-		bs.DeltaSubs[bil.ShortStrawId] = bs.DeltaSubs[bil.ShortStrawId].Add(deltaSubExtra)
+		fmt.Printf("Remainder delta cost of $%s added to deviceId %s\n", deltaSubExtra.String(), bil.ShortStrawID)
+		bs.DeltaSubs[bil.ShortStrawID] = bs.DeltaSubs[bil.ShortStrawID].Add(deltaSubExtra)
 	} else {
 		fmt.Println("There was no remainder cost when splitting delta.")
 	}
@@ -143,10 +143,10 @@ func parseBill(r io.Reader) (bill, error) {
 		return bill{}, err
 	}
 
-	phoneIndex := sliceIndex(len(b.DeviceIds), func(i int) bool { return b.DeviceIds[i] == b.ShortStrawId })
+	phoneIndex := sliceIndex(len(b.DeviceIds), func(i int) bool { return b.DeviceIds[i] == b.ShortStrawID })
 
 	if phoneIndex < 0 {
-		b.ShortStrawId = b.DeviceIds[0]
+		b.ShortStrawID = b.DeviceIds[0]
 	}
 
 	return b, nil
