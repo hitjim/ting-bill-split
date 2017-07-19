@@ -26,6 +26,10 @@ type bill struct {
 	Total        float64  `toml:"total"`
 }
 
+// Used to contain all subtotals for a monthly bill.
+// MinSubs, MsgSubs, MegSubs are maps of decimal.Decimal totals.
+// They are split by bill.DeviceIds and calculated by usage in parseMaps.
+// DeltaSubs reflect the rest of the items not based on usage, which get split evenly across all deviceIds
 type billSplit struct {
 	MinSubs   map[string]decimal.Decimal
 	MsgSubs   map[string]decimal.Decimal
@@ -40,7 +44,7 @@ func parseMaps(min map[string]int, msg map[string]int, meg map[string]int, bil b
 		make(map[string]decimal.Decimal),
 		make(map[string]decimal.Decimal),
 	}
-	usedMin, usedMsg, usedMeg := 0, 0, 0
+	var usedMin, usedMsg, usedMeg int
 	DecimalPrecision := int32(6)
 	RoundPrecision := int32(2)
 
