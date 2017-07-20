@@ -11,15 +11,134 @@ import (
 	"strconv"
 
 	"github.com/BurntSushi/toml"
+	"github.com/shopspring/decimal"
 )
 
 type bill struct {
-	Minutes   float64 `toml:"minutes"`
-	Messages  float64 `toml:"messages"`
-	Megabytes float64 `toml:"megabytes"`
-	Devices   float64 `toml:"devices"`
-	Extras    float64 `toml:"extras"`
-	Fees      float64 `toml:"fees"`
+	Minutes      float64  `toml:"minutes"`
+	Messages     float64  `toml:"messages"`
+	Megabytes    float64  `toml:"megabytes"`
+	Devices      float64  `toml:"devices"`
+	Extras       float64  `toml:"extras"`
+	Fees         float64  `toml:"fees"`
+	DeviceIds    []string `toml:"deviceIds"`
+	ShortStrawID string   `toml:"shortStrawId"`
+	Total        float64  `toml:"total"`
+}
+
+// Used to contain all subtotals for a monthly bill.
+// MinSubs, MsgSubs, MegSubs are maps of decimal.Decimal totals.
+// They are split by bill.DeviceIds and calculated by usage in parseMaps.
+// DeltaSubs reflect the rest of the items not based on usage, which get split evenly across all deviceIds
+type billSplit struct {
+	MinSubs   map[string]decimal.Decimal
+	MsgSubs   map[string]decimal.Decimal
+	MegSubs   map[string]decimal.Decimal
+	DeltaSubs map[string]decimal.Decimal
+}
+
+func parseMaps(min map[string]int, msg map[string]int, meg map[string]int, bil bill) (billSplit, error) {
+	bs := billSplit{
+		make(map[string]decimal.Decimal),
+		make(map[string]decimal.Decimal),
+		make(map[string]decimal.Decimal),
+		make(map[string]decimal.Decimal),
+	}
+	var usedMin, usedMsg, usedMeg int
+	DecimalPrecision := int32(6)
+	RoundPrecision := int32(2)
+
+	bilMinutes := decimal.NewFromFloat(bil.Minutes)
+	bilMessages := decimal.NewFromFloat(bil.Messages)
+	bilMegabytes := decimal.NewFromFloat(bil.Megabytes)
+	delta := decimal.NewFromFloat(bil.Devices + bil.Extras + bil.Fees)
+	deviceQty := decimal.New(int64(len(bil.DeviceIds)), 0)
+
+	// Calculate usage totals
+	for _, v := range min {
+		usedMin += v
+	}
+
+	for _, v := range msg {
+		usedMsg += v
+	}
+
+	for _, v := range meg {
+		usedMeg += v
+	}
+
+	for _, id := range bil.DeviceIds {
+		subMin := decimal.New(int64(min[id]), DecimalPrecision)
+		totalMin := decimal.New(int64(usedMin), DecimalPrecision)
+		percentMin := subMin.DivRound(totalMin, DecimalPrecision)
+		bs.MinSubs[id] = percentMin.Mul(bilMinutes).Round(RoundPrecision)
+
+		subMsg := decimal.New(int64(msg[id]), DecimalPrecision)
+		totalMsg := decimal.New(int64(usedMsg), DecimalPrecision)
+		percentMsg := subMsg.DivRound(totalMsg, DecimalPrecision)
+		bs.MsgSubs[id] = percentMsg.Mul(bilMessages).Round(RoundPrecision)
+
+		subMeg := decimal.New(int64(meg[id]), DecimalPrecision)
+		totalMeg := decimal.New(int64(usedMeg), DecimalPrecision)
+		percentMeg := subMeg.DivRound(totalMeg, DecimalPrecision)
+		bs.MegSubs[id] = percentMeg.Mul(bilMegabytes).Round(RoundPrecision)
+
+		bs.DeltaSubs[id] = delta.DivRound(deviceQty, RoundPrecision)
+	}
+
+	minSubSum := decimal.New(0, RoundPrecision)
+	for _, sub := range bs.MinSubs {
+		minSubSum = minSubSum.Add(sub)
+	}
+
+	minSubExtra := bilMinutes.Sub(minSubSum)
+	if minSubExtra.GreaterThan(decimal.New(0, RoundPrecision)) {
+		fmt.Printf("Remainder minutes cost of $%s to deviceId %s\n", minSubExtra.String(), bil.ShortStrawID)
+		bs.MinSubs[bil.ShortStrawID].Add(minSubExtra)
+	} else {
+		fmt.Println("There was no remainder cost when splitting minutes.")
+	}
+
+	msgSubSum := decimal.New(0, RoundPrecision)
+	for _, sub := range bs.MsgSubs {
+		msgSubSum = msgSubSum.Add(sub)
+	}
+
+	msgSubExtra := bilMessages.Sub(msgSubSum)
+	if msgSubExtra.GreaterThan(decimal.New(0, RoundPrecision)) {
+		fmt.Printf("Remainder messages cost of $%s to deviceId %s\n", msgSubExtra.String(), bil.ShortStrawID)
+		bs.MsgSubs[bil.ShortStrawID].Add(msgSubExtra)
+	} else {
+		fmt.Println("There was no remainder cost when splitting messages.")
+	}
+
+	megSubSum := decimal.New(0, RoundPrecision)
+	for _, sub := range bs.MegSubs {
+		megSubSum = megSubSum.Add(sub)
+	}
+
+	megSubExtra := bilMessages.Sub(megSubSum)
+	if megSubExtra.GreaterThan(decimal.New(0, RoundPrecision)) {
+		fmt.Printf("Remainder megabytes cost of $%s to deviceId %s\n", megSubExtra.String(), bil.ShortStrawID)
+		bs.MegSubs[bil.ShortStrawID].Add(megSubExtra)
+	} else {
+		fmt.Println("There was no remainder cost when splitting megabytes.")
+	}
+
+	deltaSubSum := decimal.New(0, RoundPrecision)
+	for _, sub := range bs.DeltaSubs {
+		deltaSubSum = deltaSubSum.Add(sub)
+	}
+
+	deltaSubExtra := delta.Sub(deltaSubSum)
+	if deltaSubExtra.GreaterThan(decimal.New(0, RoundPrecision)) {
+		fmt.Printf("Remainder delta cost of $%s added to deviceId %s\n", deltaSubExtra.String(), bil.ShortStrawID)
+		bs.DeltaSubs[bil.ShortStrawID] = bs.DeltaSubs[bil.ShortStrawID].Add(deltaSubExtra)
+	} else {
+		fmt.Println("There was no remainder cost when splitting delta.")
+	}
+
+	return bs, nil
 }
 
 func parseBill(r io.Reader) (bill, error) {
@@ -27,6 +146,13 @@ func parseBill(r io.Reader) (bill, error) {
 	if _, err := toml.DecodeReader(r, &b); err != nil {
 		return bill{}, err
 	}
+
+	phoneIndex := sliceIndex(len(b.DeviceIds), func(i int) bool { return b.DeviceIds[i] == b.ShortStrawID })
+
+	if phoneIndex < 0 {
+		b.ShortStrawID = b.DeviceIds[0]
+	}
+
 	return b, nil
 }
 
@@ -221,6 +347,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	billData, err := parseBill(billFile)
 	if err != nil {
 		log.Fatal(err)
@@ -262,4 +389,11 @@ func main() {
 		log.Fatal(err)
 	}
 	fmt.Println(megMap)
+
+	//TODO take in each map and return a billSplit
+	split, err := parseMaps(minMap, msgMap, megMap, billData)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(split)
 }
