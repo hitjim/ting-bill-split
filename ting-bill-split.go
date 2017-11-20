@@ -325,8 +325,6 @@ func main() {
 	msgPtr := flag.String("messages", "", "filename for messages csv - ex: -messages=\"messages.csv\"")
 	megPtr := flag.String("megabytes", "", "filename for megabytes csv - ex: -megabytes=\"megabytes.csv\"")
 
-	flag.Parse()
-
 	badParam := false
 	paramMap := map[string]*string{
 		"bills":     billPtr,
@@ -335,65 +333,86 @@ func main() {
 		"megabytes": megPtr,
 	}
 
-	for k, v := range paramMap {
-		checkParam(k, v, &badParam)
-	}
+	flag.Parse()
+	args := flag.Args()
 
-	if badParam {
-		os.Exit(1)
-	}
+	if len(args) > 0 {
+		if args[0] == "new" {
+			fmt.Println("Creating a directory for a new billing period.")
+			newDirName := "new-billing-period"
+			if len(args) > 2 {
+				fmt.Println("Syntax: `new <dir-name>`")
+			} else {
+				if _, err := os.Stat(newDirName); os.IsNotExist(err) {
+					os.Mkdir(newDirName, os.ModeDir)
+				}
+			}
+		} else {
+			fmt.Println("Use `new` to create a new billing directory")
+			fmt.Println("... or `-h` for flag options")
+		}
+	} else {
+		fmt.Println("Running with with individual file assignments")
+		for k, v := range paramMap {
+			checkParam(k, v, &badParam)
+		}
 
-	billFile, err := os.Open(*billPtr)
-	if err != nil {
-		log.Fatal(err)
-	}
+		if badParam {
+			os.Exit(1)
+		}
 
-	billData, err := parseBill(billFile)
-	if err != nil {
-		log.Fatal(err)
-	}
+		billFile, err := os.Open(*billPtr)
+		if err != nil {
+			log.Fatal(err)
+		}
 
-	// TODO remove this once we do something useful with it.
-	fmt.Println("billData ... something something ... *wanders off*")
-	fmt.Println(billData)
+		billData, err := parseBill(billFile)
+		if err != nil {
+			log.Fatal(err)
+		}
 
-	minFile, err := os.Open(*minPtr)
-	if err != nil {
-		log.Fatal(err)
-	}
+		// TODO remove this once we do something useful with it.
+		fmt.Println("billData ... something something ... *wanders off*")
+		fmt.Println(billData)
 
-	msgFile, err := os.Open(*msgPtr)
-	if err != nil {
-		log.Fatal(err)
-	}
+		minFile, err := os.Open(*minPtr)
+		if err != nil {
+			log.Fatal(err)
+		}
 
-	megFile, err := os.Open(*megPtr)
-	if err != nil {
-		log.Fatal(err)
-	}
+		msgFile, err := os.Open(*msgPtr)
+		if err != nil {
+			log.Fatal(err)
+		}
 
-	minMap, err := parseMinutes(minFile)
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Println(minMap)
+		megFile, err := os.Open(*megPtr)
+		if err != nil {
+			log.Fatal(err)
+		}
 
-	msgMap, err := parseMessages(msgFile)
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Println(msgMap)
+		minMap, err := parseMinutes(minFile)
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Println(minMap)
 
-	megMap, err := parseMegabytes(megFile)
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Println(megMap)
+		msgMap, err := parseMessages(msgFile)
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Println(msgMap)
 
-	//TODO take in each map and return a billSplit
-	split, err := parseMaps(minMap, msgMap, megMap, billData)
-	if err != nil {
-		log.Fatal(err)
+		megMap, err := parseMegabytes(megFile)
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Println(megMap)
+
+		//TODO take in each map and return a billSplit
+		split, err := parseMaps(minMap, msgMap, megMap, billData)
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Println(split)
 	}
-	fmt.Println(split)
 }
