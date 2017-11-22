@@ -317,6 +317,20 @@ func parseMegabytes(megReader io.Reader) (map[string]int, error) {
 	return m, nil
 }
 
+func createNewBillingDir(args []string) {
+	newDirName := "new-billing-period"
+	if len(args) > 2 {
+		fmt.Println("Syntax: `new <dir-name>`")
+	} else {
+		newDirName = args[1]
+		fmt.Printf("newDirName is: %s", newDirName)
+		if _, err := os.Stat(newDirName); os.IsNotExist(err) {
+			fmt.Println("Creating a directory for a new billing period.")
+			os.MkdirAll(newDirName, os.ModeDir)
+		}
+	}
+}
+
 func main() {
 	fmt.Printf("Ting Bill Splitter\n\n")
 
@@ -338,15 +352,7 @@ func main() {
 
 	if len(args) > 0 {
 		if args[0] == "new" {
-			fmt.Println("Creating a directory for a new billing period.")
-			newDirName := "new-billing-period"
-			if len(args) > 2 {
-				fmt.Println("Syntax: `new <dir-name>`")
-			} else {
-				if _, err := os.Stat(newDirName); os.IsNotExist(err) {
-					os.Mkdir(newDirName, os.ModeDir)
-				}
-			}
+			createNewBillingDir(args)
 		} else {
 			fmt.Println("Use `new` to create a new billing directory")
 			fmt.Println("... or `-h` for flag options")
