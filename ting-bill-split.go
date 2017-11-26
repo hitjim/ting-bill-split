@@ -351,6 +351,7 @@ func main() {
 	args := flag.Args()
 
 	if len(args) > 0 {
+		fmt.Println("Running in batch mode")
 		if args[0] == "new" {
 			createNewBillingDir(args)
 		} else {
