@@ -331,6 +331,24 @@ func createNewBillingDir(args []string) {
 	}
 }
 
+func createBillsFile(path string) {
+	newBills := bill{
+		Minutes:      0.00,
+		Messages:     0.00,
+		Megabytes:    0.00,
+		Devices:      0.00,
+		Extras:       0.00,
+		Fees:         0.00,
+		DeviceIds:    []string{},
+		ShortStrawID: "",
+		Total:        0.00,
+	}
+
+	if err := toml.NewEncoder(os.Stdout).Encode(newBills); err != nil {
+		log.Fatalf("Error encoding TOML: %s", err)
+	}
+}
+
 func main() {
 	fmt.Printf("Ting Bill Splitter\n\n")
 
