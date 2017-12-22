@@ -322,16 +322,29 @@ func createNewBillingDir(args []string) {
 	if len(args) > 2 {
 		fmt.Println("Syntax: `new <dir-name>`")
 	} else {
-		newDirName = args[1]
-		fmt.Printf("newDirName is: %s", newDirName)
+		if len(args) == 2 {
+			newDirName = args[1]
+		}
 		if _, err := os.Stat(newDirName); os.IsNotExist(err) {
 			fmt.Println("Creating a directory for a new billing period.")
 			os.MkdirAll(newDirName, os.ModeDir)
+			createBillsFile(newDirName)
+			fmt.Printf("\n1. Enter values for the bills.toml file in new directory `%s`\n", newDirName)
+			fmt.Println("2. Add csv files for minutes, message, megabytes in the new directory")
+			fmt.Printf("3. run `ting-bill-split %s`\n", newDirName)
+
 		}
 	}
 }
 
 func createBillsFile(path string) {
+	path += "/bills.toml"
+	f, err := os.Create(path)
+
+	if err != nil {
+		panic(err)
+	}
+
 	newBills := bill{
 		Minutes:      0.00,
 		Messages:     0.00,
@@ -344,7 +357,7 @@ func createBillsFile(path string) {
 		Total:        0.00,
 	}
 
-	if err := toml.NewEncoder(os.Stdout).Encode(newBills); err != nil {
+	if err := toml.NewEncoder(f).Encode(newBills); err != nil {
 		log.Fatalf("Error encoding TOML: %s", err)
 	}
 }
