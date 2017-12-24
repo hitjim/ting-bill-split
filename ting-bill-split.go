@@ -317,6 +317,51 @@ func parseMegabytes(megReader io.Reader) (map[string]int, error) {
 	return m, nil
 }
 
+func createNewBillingDir(args []string) {
+	newDirName := "new-billing-period"
+	if len(args) > 2 {
+		fmt.Println("Syntax: `new <dir-name>`")
+	} else {
+		if len(args) == 2 {
+			newDirName = args[1]
+		}
+		if _, err := os.Stat(newDirName); os.IsNotExist(err) {
+			fmt.Println("Creating a directory for a new billing period.")
+			os.MkdirAll(newDirName, os.ModeDir)
+			createBillsFile(newDirName)
+			fmt.Printf("\n1. Enter values for the bills.toml file in new directory `%s`\n", newDirName)
+			fmt.Println("2. Add csv files for minutes, message, megabytes in the new directory")
+			fmt.Printf("3. run `ting-bill-split %s`\n", newDirName)
+
+		}
+	}
+}
+
+func createBillsFile(path string) {
+	path += "/bills.toml"
+	f, err := os.Create(path)
+
+	if err != nil {
+		panic(err)
+	}
+
+	newBills := bill{
+		Minutes:      0.00,
+		Messages:     0.00,
+		Megabytes:    0.00,
+		Devices:      0.00,
+		Extras:       0.00,
+		Fees:         0.00,
+		DeviceIds:    []string{},
+		ShortStrawID: "",
+		Total:        0.00,
+	}
+
+	if err := toml.NewEncoder(f).Encode(newBills); err != nil {
+		log.Fatalf("Error encoding TOML: %s", err)
+	}
+}
+
 func main() {
 	fmt.Printf("Ting Bill Splitter\n\n")
 
@@ -324,8 +369,6 @@ func main() {
 	minPtr := flag.String("minutes", "", "filename for minutes csv - ex: -minutes=\"minutes.csv\"")
 	msgPtr := flag.String("messages", "", "filename for messages csv - ex: -messages=\"messages.csv\"")
 	megPtr := flag.String("megabytes", "", "filename for megabytes csv - ex: -megabytes=\"megabytes.csv\"")
-
-	flag.Parse()
 
 	badParam := false
 	paramMap := map[string]*string{
@@ -335,65 +378,79 @@ func main() {
 		"megabytes": megPtr,
 	}
 
-	for k, v := range paramMap {
-		checkParam(k, v, &badParam)
-	}
+	flag.Parse()
+	args := flag.Args()
 
-	if badParam {
-		os.Exit(1)
-	}
+	if len(args) > 0 {
+		fmt.Println("Running in batch mode")
+		if args[0] == "new" {
+			createNewBillingDir(args)
+		} else {
+			fmt.Println("Use `new` to create a new billing directory")
+			fmt.Println("... or `-h` for flag options")
+		}
+	} else {
+		fmt.Println("Running with with individual file assignments")
+		for k, v := range paramMap {
+			checkParam(k, v, &badParam)
+		}
 
-	billFile, err := os.Open(*billPtr)
-	if err != nil {
-		log.Fatal(err)
-	}
+		if badParam {
+			os.Exit(1)
+		}
 
-	billData, err := parseBill(billFile)
-	if err != nil {
-		log.Fatal(err)
-	}
+		billFile, err := os.Open(*billPtr)
+		if err != nil {
+			log.Fatal(err)
+		}
 
-	// TODO remove this once we do something useful with it.
-	fmt.Println("billData ... something something ... *wanders off*")
-	fmt.Println(billData)
+		billData, err := parseBill(billFile)
+		if err != nil {
+			log.Fatal(err)
+		}
 
-	minFile, err := os.Open(*minPtr)
-	if err != nil {
-		log.Fatal(err)
-	}
+		// TODO remove this once we do something useful with it.
+		fmt.Println("billData ... something something ... *wanders off*")
+		fmt.Println(billData)
 
-	msgFile, err := os.Open(*msgPtr)
-	if err != nil {
-		log.Fatal(err)
-	}
+		minFile, err := os.Open(*minPtr)
+		if err != nil {
+			log.Fatal(err)
+		}
 
-	megFile, err := os.Open(*megPtr)
-	if err != nil {
-		log.Fatal(err)
-	}
+		msgFile, err := os.Open(*msgPtr)
+		if err != nil {
+			log.Fatal(err)
+		}
 
-	minMap, err := parseMinutes(minFile)
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Println(minMap)
+		megFile, err := os.Open(*megPtr)
+		if err != nil {
+			log.Fatal(err)
+		}
 
-	msgMap, err := parseMessages(msgFile)
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Println(msgMap)
+		minMap, err := parseMinutes(minFile)
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Println(minMap)
 
-	megMap, err := parseMegabytes(megFile)
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Println(megMap)
+		msgMap, err := parseMessages(msgFile)
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Println(msgMap)
 
-	//TODO take in each map and return a billSplit
-	split, err := parseMaps(minMap, msgMap, megMap, billData)
-	if err != nil {
-		log.Fatal(err)
+		megMap, err := parseMegabytes(megFile)
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Println(megMap)
+
+		//TODO take in each map and return a billSplit
+		split, err := parseMaps(minMap, msgMap, megMap, billData)
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Println(split)
 	}
-	fmt.Println(split)
 }
