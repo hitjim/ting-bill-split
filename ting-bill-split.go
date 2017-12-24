@@ -317,6 +317,51 @@ func parseMegabytes(megReader io.Reader) (map[string]int, error) {
 	return m, nil
 }
 
+func createNewBillingDir(args []string) {
+	newDirName := "new-billing-period"
+	if len(args) > 2 {
+		fmt.Println("Syntax: `new <dir-name>`")
+	} else {
+		if len(args) == 2 {
+			newDirName = args[1]
+		}
+		if _, err := os.Stat(newDirName); os.IsNotExist(err) {
+			fmt.Println("Creating a directory for a new billing period.")
+			os.MkdirAll(newDirName, os.ModeDir)
+			createBillsFile(newDirName)
+			fmt.Printf("\n1. Enter values for the bills.toml file in new directory `%s`\n", newDirName)
+			fmt.Println("2. Add csv files for minutes, message, megabytes in the new directory")
+			fmt.Printf("3. run `ting-bill-split %s`\n", newDirName)
+
+		}
+	}
+}
+
+func createBillsFile(path string) {
+	path += "/bills.toml"
+	f, err := os.Create(path)
+
+	if err != nil {
+		panic(err)
+	}
+
+	newBills := bill{
+		Minutes:      0.00,
+		Messages:     0.00,
+		Megabytes:    0.00,
+		Devices:      0.00,
+		Extras:       0.00,
+		Fees:         0.00,
+		DeviceIds:    []string{},
+		ShortStrawID: "",
+		Total:        0.00,
+	}
+
+	if err := toml.NewEncoder(f).Encode(newBills); err != nil {
+		log.Fatalf("Error encoding TOML: %s", err)
+	}
+}
+
 func main() {
 	fmt.Printf("Ting Bill Splitter\n\n")
 
@@ -337,16 +382,9 @@ func main() {
 	args := flag.Args()
 
 	if len(args) > 0 {
+		fmt.Println("Running in batch mode")
 		if args[0] == "new" {
-			fmt.Println("Creating a directory for a new billing period.")
-			newDirName := "new-billing-period"
-			if len(args) > 2 {
-				fmt.Println("Syntax: `new <dir-name>`")
-			} else {
-				if _, err := os.Stat(newDirName); os.IsNotExist(err) {
-					os.Mkdir(newDirName, os.ModeDir)
-				}
-			}
+			createNewBillingDir(args)
 		} else {
 			fmt.Println("Use `new` to create a new billing directory")
 			fmt.Println("... or `-h` for flag options")
