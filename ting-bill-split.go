@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"os"
 	"strconv"
@@ -362,35 +363,62 @@ func createBillsFile(path string) {
 	}
 }
 
+func parseDir(path string) {
+	files, err := ioutil.ReadDir(path)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for _, file := range files {
+		if !file.IsDir() {
+			fmt.Println(file.Name())
+		}
+	}
+}
+
 func main() {
 	fmt.Printf("Ting Bill Splitter\n\n")
-
-	billPtr := flag.String("bills", "", "filename for bills toml - ex: -bills=\"bills.toml\"")
-	minPtr := flag.String("minutes", "", "filename for minutes csv - ex: -minutes=\"minutes.csv\"")
-	msgPtr := flag.String("messages", "", "filename for messages csv - ex: -messages=\"messages.csv\"")
-	megPtr := flag.String("megabytes", "", "filename for megabytes csv - ex: -megabytes=\"megabytes.csv\"")
-
-	badParam := false
-	paramMap := map[string]*string{
-		"bills":     billPtr,
-		"minutes":   minPtr,
-		"messages":  msgPtr,
-		"megabytes": megPtr,
-	}
 
 	flag.Parse()
 	args := flag.Args()
 
 	if len(args) > 0 {
 		fmt.Println("Running in batch mode")
-		if args[0] == "new" {
+
+		command := args[0]
+
+		if command == "new" {
 			createNewBillingDir(args)
+		} else if command == "dir" {
+			targetDir := "."
+			if len(args) > 1 {
+				targetDir = args[1]
+			}
+			fmt.Printf("\n targetDir is %s\n", targetDir)
+			parseDir(targetDir)
+
 		} else {
-			fmt.Println("Use `new` to create a new billing directory")
-			fmt.Println("... or `-h` for flag options")
+			fmt.Println("Use `ting-bill-split new` or `new <billing-directory>` to create a new billing directory")
+			fmt.Println("Use `ting-bill-split dir <billing-directory>` to run on a directory containing a `bills.toml`, and CSV files for minutes, messages, and megabytes usage.")
+			fmt.Println("  Each of these files must contain their type somewhere in the filename - i.e. `YYYYMMDD-messages.csv` or `messages-potatosalad.csv` or whatever.")
+			fmt.Printf("\n... or `-h` for flag options")
 		}
 	} else {
 		fmt.Println("Running with with individual file assignments")
+
+		billPtr := flag.String("bills", "", "filename for bills toml - ex: -bills=\"bills.toml\"")
+		minPtr := flag.String("minutes", "", "filename for minutes csv - ex: -minutes=\"minutes.csv\"")
+		msgPtr := flag.String("messages", "", "filename for messages csv - ex: -messages=\"messages.csv\"")
+		megPtr := flag.String("megabytes", "", "filename for megabytes csv - ex: -megabytes=\"megabytes.csv\"")
+
+		badParam := false
+		paramMap := map[string]*string{
+			"bills":     billPtr,
+			"minutes":   minPtr,
+			"messages":  msgPtr,
+			"megabytes": megPtr,
+		}
+
 		for k, v := range paramMap {
 			checkParam(k, v, &badParam)
 		}
