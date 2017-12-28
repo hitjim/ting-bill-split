@@ -93,6 +93,35 @@ func TestParseMegabytes(t *testing.T) {
 	}
 }
 
+func TestIsFileMatch(t *testing.T) {
+	cases := []struct {
+		fileName string
+		nameTerm string
+		ext      string
+		want     bool
+	}{
+		{
+			"messages.csv",
+			"messages",
+			"csv",
+			true,
+		},
+		{
+			"Messages.csv",
+			"messages",
+			"csv",
+			true,
+		},
+	}
+
+	for _, c := range cases {
+		got := isFileMatch(c.fileName, c.nameTerm, c.ext)
+		if got != c.want {
+			t.Errorf("isFileMatch(%s, %s, $s) == %v, want %v", c.fileName, c.nameTerm, c.ext, c.want)
+		}
+	}
+}
+
 func TestParseBill(t *testing.T) {
 	cases := []struct {
 		in   string

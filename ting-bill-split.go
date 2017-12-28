@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"regexp"
 	"strconv"
 
 	"github.com/BurntSushi/toml"
@@ -363,6 +364,16 @@ func createBillsFile(path string) {
 	}
 }
 
+func isFileMatch(fileName string, nameTerm string, ext string) bool {
+	r := regexp.MustCompile(`(?i)^[\w-]*` + nameTerm + `[\w-]*$`)
+
+	if ext != "" {
+		r = regexp.MustCompile(`(?i)^[\w-]*` + nameTerm + `[\w-]*(\.` + ext + `)$`)
+	}
+
+	return r.MatchString(fileName)
+}
+
 func parseDir(path string) {
 	files, err := ioutil.ReadDir(path)
 	if err != nil {
@@ -371,7 +382,9 @@ func parseDir(path string) {
 
 	for _, file := range files {
 		if !file.IsDir() {
+			fmt.Println("HERE IS A FILE")
 			fmt.Println(file.Name())
+			fmt.Printf("\n")
 		}
 	}
 }
