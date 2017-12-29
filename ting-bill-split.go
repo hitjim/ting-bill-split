@@ -429,7 +429,6 @@ func parseDir(path string) {
 
 		if billFile == nil {
 			fmt.Println("Bills file not found.")
-			fmt.Println(billFile)
 		}
 
 		if minFile == nil {
@@ -443,6 +442,42 @@ func parseDir(path string) {
 		if megFile == nil {
 			fmt.Println("Megabytes file not found.")
 		}
+	} else {
+		fmt.Printf("\nRunning calculations based on files in directory: %s\n\n", path)
+
+		billData, err := parseBill(billFile)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		// TODO remove this once we do something useful with it.
+		fmt.Println("billData ... something something ... *wanders off*")
+		fmt.Println(billData)
+
+		minMap, err := parseMinutes(minFile)
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Println(minMap)
+
+		msgMap, err := parseMessages(msgFile)
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Println(msgMap)
+
+		megMap, err := parseMegabytes(megFile)
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Println(megMap)
+
+		//TODO take in each map and return a billSplit
+		split, err := parseMaps(minMap, msgMap, megMap, billData)
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Println(split)
 	}
 }
 
