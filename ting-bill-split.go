@@ -377,10 +377,10 @@ func isFileMatch(fileName string, nameTerm string, ext string) bool {
 func parseDir(path string) {
 	files, err := ioutil.ReadDir(path)
 
-	var billPtr *string
-	var minPtr *string
-	var msgPtr *string
-	var megPtr *string
+	var billFile *os.File
+	var minFile *os.File
+	var msgFile *os.File
+	var megFile *os.File
 
 	if err != nil {
 		log.Fatal(err)
@@ -388,33 +388,60 @@ func parseDir(path string) {
 
 	for _, file := range files {
 		if !file.IsDir() {
-			fmt.Println("billPtr")
-			fmt.Println(billPtr)
-
-			if billPtr == nil && isFileMatch(file.Name(), "bills", "toml") {
-				billFile, err := os.Open(*billPtr)
-				if err != nil {
-					log.Fatal(err)
-				}
-			}
-
-			fmt.Println("minPtr")
-			fmt.Println(minPtr)
-
-			if minPtr == nil && isFileMatch(file.Name(), "minutes", "csv") {
-				minFile, err := os.Open(*minPtr)
-				if err != nil {
-					log.Fatal(err)
-				}
-			}
-
-			fmt.Println("msgPtr")
-			fmt.Println(msgPtr)
-
-			fmt.Println("megPtr")
-			fmt.Println(megPtr)
-
 			fmt.Println(file.Name())
+
+			if billFile == nil && isFileMatch(file.Name(), "bills", "toml") {
+				billFile, err = os.Open(file.Name())
+				if err != nil {
+					log.Fatal(err)
+				}
+				fmt.Println(billFile)
+			}
+
+			if minFile == nil && isFileMatch(file.Name(), "minutes", "csv") {
+				minFile, err = os.Open(file.Name())
+				if err != nil {
+					log.Fatal(err)
+				}
+				fmt.Println(minFile)
+			}
+
+			if msgFile == nil && isFileMatch(file.Name(), "messages", "csv") {
+				msgFile, err = os.Open(file.Name())
+				if err != nil {
+					log.Fatal(err)
+				}
+				fmt.Println(msgFile)
+			}
+
+			if megFile == nil && isFileMatch(file.Name(), "megabytes", "csv") {
+				megFile, err = os.Open(file.Name())
+				if err != nil {
+					log.Fatal(err)
+				}
+				fmt.Println(megFile)
+			}
+		}
+	}
+
+	if billFile == nil || minFile == nil || msgFile == nil || megFile == nil {
+		fmt.Println("Unable to open necessary files.")
+
+		if billFile == nil {
+			fmt.Println("Bills file not found.")
+			fmt.Println(billFile)
+		}
+
+		if minFile == nil {
+			fmt.Println("Minutes file not found.")
+		}
+
+		if msgFile == nil {
+			fmt.Println("Messages file not found.")
+		}
+
+		if megFile == nil {
+			fmt.Println("Megabytes file not found.")
 		}
 	}
 }
