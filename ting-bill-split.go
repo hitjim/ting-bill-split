@@ -376,15 +376,45 @@ func isFileMatch(fileName string, nameTerm string, ext string) bool {
 
 func parseDir(path string) {
 	files, err := ioutil.ReadDir(path)
+
+	var billPtr *string
+	var minPtr *string
+	var msgPtr *string
+	var megPtr *string
+
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	for _, file := range files {
 		if !file.IsDir() {
-			fmt.Println("HERE IS A FILE")
+			fmt.Println("billPtr")
+			fmt.Println(billPtr)
+
+			if billPtr == nil && isFileMatch(file.Name(), "bills", "toml") {
+				billFile, err := os.Open(*billPtr)
+				if err != nil {
+					log.Fatal(err)
+				}
+			}
+
+			fmt.Println("minPtr")
+			fmt.Println(minPtr)
+
+			if minPtr == nil && isFileMatch(file.Name(), "minutes", "csv") {
+				minFile, err := os.Open(*minPtr)
+				if err != nil {
+					log.Fatal(err)
+				}
+			}
+
+			fmt.Println("msgPtr")
+			fmt.Println(msgPtr)
+
+			fmt.Println("megPtr")
+			fmt.Println(megPtr)
+
 			fmt.Println(file.Name())
-			fmt.Printf("\n")
 		}
 	}
 }

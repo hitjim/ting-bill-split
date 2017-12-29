@@ -184,6 +184,24 @@ func TestIsFileMatch(t *testing.T) {
 			"toml",
 			false,
 		},
+		{
+			"messages",
+			"messages",
+			"",
+			true,
+		},
+		{
+			"messages",
+			"messages.",
+			"",
+			false,
+		},
+		{
+			"messages",
+			"messages.messages",
+			"",
+			false,
+		},
 	}
 
 	for _, c := range cases {
