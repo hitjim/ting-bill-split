@@ -364,6 +364,9 @@ func createBillsFile(path string) {
 	}
 }
 
+// For a fileName string, return true if it contains the nameTerm anywhere.
+// If an empty string is provided for `ext`, no extension matching is performed.
+// Otherwise additional file extension matching is performed.
 func isFileMatch(fileName string, nameTerm string, ext string) bool {
 	r := regexp.MustCompile(`(?i)^[\w-]*` + nameTerm + `[\w-]*$`)
 
@@ -375,51 +378,47 @@ func isFileMatch(fileName string, nameTerm string, ext string) bool {
 }
 
 func parseDir(path string) {
-	files, err := ioutil.ReadDir(path)
-
 	var billFile *os.File
 	var minFile *os.File
 	var msgFile *os.File
 	var megFile *os.File
+
+	files, err := ioutil.ReadDir(path)
 
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	for _, file := range files {
-		if !file.IsDir() {
-			fmt.Println(file.Name())
+		if file.IsDir() {
+			continue
+		}
 
-			if billFile == nil && isFileMatch(file.Name(), "bills", "toml") {
-				billFile, err = os.Open(file.Name())
-				if err != nil {
-					log.Fatal(err)
-				}
-				fmt.Println(billFile)
+		if billFile == nil && isFileMatch(file.Name(), "bills", "toml") {
+			billFile, err = os.Open(file.Name())
+			if err != nil {
+				log.Fatal(err)
 			}
+		}
 
-			if minFile == nil && isFileMatch(file.Name(), "minutes", "csv") {
-				minFile, err = os.Open(file.Name())
-				if err != nil {
-					log.Fatal(err)
-				}
-				fmt.Println(minFile)
+		if minFile == nil && isFileMatch(file.Name(), "minutes", "csv") {
+			minFile, err = os.Open(file.Name())
+			if err != nil {
+				log.Fatal(err)
 			}
+		}
 
-			if msgFile == nil && isFileMatch(file.Name(), "messages", "csv") {
-				msgFile, err = os.Open(file.Name())
-				if err != nil {
-					log.Fatal(err)
-				}
-				fmt.Println(msgFile)
+		if msgFile == nil && isFileMatch(file.Name(), "messages", "csv") {
+			msgFile, err = os.Open(file.Name())
+			if err != nil {
+				log.Fatal(err)
 			}
+		}
 
-			if megFile == nil && isFileMatch(file.Name(), "megabytes", "csv") {
-				megFile, err = os.Open(file.Name())
-				if err != nil {
-					log.Fatal(err)
-				}
-				fmt.Println(megFile)
+		if megFile == nil && isFileMatch(file.Name(), "megabytes", "csv") {
+			megFile, err = os.Open(file.Name())
+			if err != nil {
+				log.Fatal(err)
 			}
 		}
 	}
@@ -429,20 +428,24 @@ func parseDir(path string) {
 
 		if billFile == nil {
 			fmt.Println("Bills file not found.")
+			return
 		}
 
 		if minFile == nil {
 			fmt.Println("Minutes file not found.")
+			return
 		}
 
 		if msgFile == nil {
 			fmt.Println("Messages file not found.")
+			return
 		}
 
 		if megFile == nil {
 			fmt.Println("Megabytes file not found.")
+			return
 		}
-	} else {
+
 		fmt.Printf("\nRunning calculations based on files in directory: %s\n\n", path)
 
 		billData, err := parseBill(billFile)
@@ -484,6 +487,11 @@ func parseDir(path string) {
 func main() {
 	fmt.Printf("Ting Bill Splitter\n\n")
 
+	billPtr := flag.String("bills", "", "filename for bills toml - ex: -bills=\"bills.toml\"")
+	minPtr := flag.String("minutes", "", "filename for minutes csv - ex: -minutes=\"minutes.csv\"")
+	msgPtr := flag.String("messages", "", "filename for messages csv - ex: -messages=\"messages.csv\"")
+	megPtr := flag.String("megabytes", "", "filename for megabytes csv - ex: -megabytes=\"megabytes.csv\"")
+
 	flag.Parse()
 	args := flag.Args()
 
@@ -492,17 +500,17 @@ func main() {
 
 		command := args[0]
 
-		if command == "new" {
+		switch command {
+		case "new":
 			createNewBillingDir(args)
-		} else if command == "dir" {
+		case "dir":
 			targetDir := "."
 			if len(args) > 1 {
 				targetDir = args[1]
 			}
 			fmt.Printf("\n targetDir is %s\n", targetDir)
 			parseDir(targetDir)
-
-		} else {
+		default:
 			fmt.Println("Use `ting-bill-split new` or `new <billing-directory>` to create a new billing directory")
 			fmt.Println("Use `ting-bill-split dir <billing-directory>` to run on a directory containing a `bills.toml`, and CSV files for minutes, messages, and megabytes usage.")
 			fmt.Println("  Each of these files must contain their type somewhere in the filename - i.e. `YYYYMMDD-messages.csv` or `messages-potatosalad.csv` or whatever.")
@@ -510,11 +518,6 @@ func main() {
 		}
 	} else {
 		fmt.Println("Running with with individual file assignments")
-
-		billPtr := flag.String("bills", "", "filename for bills toml - ex: -bills=\"bills.toml\"")
-		minPtr := flag.String("minutes", "", "filename for minutes csv - ex: -minutes=\"minutes.csv\"")
-		msgPtr := flag.String("messages", "", "filename for messages csv - ex: -messages=\"messages.csv\"")
-		megPtr := flag.String("megabytes", "", "filename for megabytes csv - ex: -megabytes=\"megabytes.csv\"")
 
 		badParam := false
 		paramMap := map[string]*string{
