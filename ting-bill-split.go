@@ -53,8 +53,11 @@ func parseMaps(min map[string]int, msg map[string]int, meg map[string]int, bil b
 	bilMinutes := decimal.NewFromFloat(bil.Minutes)
 	bilMessages := decimal.NewFromFloat(bil.Messages)
 	bilMegabytes := decimal.NewFromFloat(bil.Megabytes)
-	delta := decimal.NewFromFloat(bil.Devices + bil.Extras + bil.Fees)
+	delta := decimal.NewFromFloat(bil.Devices + bil.Extras + bil.Fees).Round(DecimalPrecision)
 	deviceQty := decimal.New(int64(len(bil.DeviceIds)), 0)
+
+	fmt.Println("DELTA YALLL")
+	fmt.Println(delta)
 
 	// Calculate usage totals
 	for _, v := range min {
@@ -128,9 +131,14 @@ func parseMaps(min map[string]int, msg map[string]int, meg map[string]int, bil b
 	}
 
 	deltaSubSum := decimal.New(0, RoundPrecision)
+	fmt.Println("bs.DeltaSubs is")
+	fmt.Println(bs.DeltaSubs)
 	for _, sub := range bs.DeltaSubs {
 		deltaSubSum = deltaSubSum.Add(sub)
 	}
+
+	fmt.Println("deltaSubSum is")
+	fmt.Println(deltaSubSum)
 
 	deltaSubExtra := delta.Sub(deltaSubSum)
 	if deltaSubExtra.GreaterThan(decimal.New(0, RoundPrecision)) {
@@ -391,6 +399,7 @@ func parseDir(path string) {
 
 	for _, file := range files {
 		if file.IsDir() {
+			fmt.Println(file)
 			continue
 		}
 
@@ -445,7 +454,7 @@ func parseDir(path string) {
 			fmt.Println("Megabytes file not found.")
 			return
 		}
-
+	} else {
 		fmt.Printf("\nRunning calculations based on files in directory: %s\n\n", path)
 
 		billData, err := parseBill(billFile)
