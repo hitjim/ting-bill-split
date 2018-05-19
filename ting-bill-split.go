@@ -56,9 +56,6 @@ func parseMaps(min map[string]int, msg map[string]int, meg map[string]int, bil b
 	delta := decimal.NewFromFloat(bil.Devices + bil.Extras + bil.Fees).Round(DecimalPrecision)
 	deviceQty := decimal.New(int64(len(bil.DeviceIds)), 0)
 
-	fmt.Println("DELTA YALLL")
-	fmt.Println(delta)
-
 	// Calculate usage totals
 	for _, v := range min {
 		usedMin += v
@@ -136,9 +133,6 @@ func parseMaps(min map[string]int, msg map[string]int, meg map[string]int, bil b
 	for _, sub := range bs.DeltaSubs {
 		deltaSubSum = deltaSubSum.Add(sub)
 	}
-
-	fmt.Println("deltaSubSum is")
-	fmt.Println(deltaSubSum)
 
 	deltaSubExtra := delta.Sub(deltaSubSum)
 	if deltaSubExtra.GreaterThan(decimal.New(0, RoundPrecision)) {
@@ -399,7 +393,6 @@ func parseDir(path string) {
 
 	for _, file := range files {
 		if file.IsDir() {
-			fmt.Println(file)
 			continue
 		}
 
