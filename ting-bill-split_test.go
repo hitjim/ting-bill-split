@@ -290,6 +290,7 @@ deviceIds = [ "1112223333", "1112224444", "1112220000" ]`,
 }
 
 func TestParseMaps(t *testing.T) {
+	DecimalPrecision := int32(6)
 	cases := []struct {
 		min  map[string]int
 		msg  map[string]int
@@ -323,24 +324,24 @@ func TestParseMaps(t *testing.T) {
 			},
 			billSplit{
 				MinSubs: map[string]decimal.Decimal{
-					"1112220000": decimal.NewFromFloat(0),
-					"1112223333": decimal.NewFromFloat(26.25),
-					"1112224444": decimal.NewFromFloat(8.75),
+					"1112220000": decimal.NewFromFloat(0).Round(DecimalPrecision),
+					"1112223333": decimal.NewFromFloat(26.25).Round(DecimalPrecision),
+					"1112224444": decimal.NewFromFloat(8.75).Round(DecimalPrecision),
 				},
 				MsgSubs: map[string]decimal.Decimal{
-					"1112220000": decimal.NewFromFloat(0),
-					"1112223333": decimal.NewFromFloat(6.03),
-					"1112224444": decimal.NewFromFloat(1.97),
+					"1112220000": decimal.NewFromFloat(0).Round(DecimalPrecision),
+					"1112223333": decimal.NewFromFloat(6.03).Round(DecimalPrecision),
+					"1112224444": decimal.NewFromFloat(1.97).Round(DecimalPrecision),
 				},
 				MegSubs: map[string]decimal.Decimal{
-					"1112220000": decimal.NewFromFloat(0),
-					"1112223333": decimal.NewFromFloat(14.55),
-					"1112224444": decimal.NewFromFloat(5.45),
+					"1112220000": decimal.NewFromFloat(0).Round(DecimalPrecision),
+					"1112223333": decimal.NewFromFloat(14.55).Round(DecimalPrecision),
+					"1112224444": decimal.NewFromFloat(5.45).Round(DecimalPrecision),
 				},
 				DeltaSubs: map[string]decimal.Decimal{
-					"1112223333": decimal.NewFromFloat(18.61),
-					"1112224444": decimal.NewFromFloat(18.61),
-					"1112220000": decimal.NewFromFloat(18.62),
+					"1112223333": decimal.NewFromFloat(18.61).Round(DecimalPrecision),
+					"1112224444": decimal.NewFromFloat(18.61).Round(DecimalPrecision),
+					"1112220000": decimal.NewFromFloat(18.62).Round(DecimalPrecision),
 				},
 			},
 		},
