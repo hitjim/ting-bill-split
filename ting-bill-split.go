@@ -13,6 +13,7 @@ import (
 	"strconv"
 
 	"github.com/BurntSushi/toml"
+	"github.com/balacode/one-file-pdf"
 	"github.com/shopspring/decimal"
 )
 
@@ -455,10 +456,6 @@ func parseDir(path string) {
 			log.Fatal(err)
 		}
 
-		// TODO remove this once we do something useful with it.
-		fmt.Println("billData ... something something ... *wanders off*")
-		fmt.Println(billData)
-
 		minMap, err := parseMinutes(minFile)
 		if err != nil {
 			log.Fatal(err)
@@ -483,7 +480,39 @@ func parseDir(path string) {
 			log.Fatal(err)
 		}
 		fmt.Println(split)
+
+		invoiceNames, err := generatePDF(split)
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Printf("invoiceNames is: %s", invoiceNames)
 	}
+}
+
+func generatePDF(bs billSplit) ([]string, error) {
+	fileNames := []string{`test.pdf`}
+
+	fmt.Println(`Generating invoice TODO:filename PDFs in path TODO:path`)
+
+	// create new PDF of A4 page size
+	var pdf = pdf.NewPDF("A4")
+	pdf.SetUnits("cm")
+	pdf.DrawUnitGrid() // TODO: remove grid after completion
+
+	// TODO add dates to bills, change to `bill`
+
+	pdf.SetFont("Helvetica-Bold", 50).
+		SetXY(1, 2).
+		SetColor("#0ae").
+		DrawText("Ting Bill Split")
+
+	// TODO make this take a path in, for dir-mode splitting
+	err := pdf.SaveFile(fileNames[0])
+
+	// TODO - once we're printing to multiple files, return the list
+	//  For now, just return fileNames
+
+	return fileNames, err
 }
 
 func main() {
@@ -496,6 +525,7 @@ func main() {
 
 	flag.Parse()
 	args := flag.Args()
+	targetDir := "."
 
 	if len(args) > 0 {
 		fmt.Println("Running in batch mode")
@@ -506,12 +536,13 @@ func main() {
 		case "new":
 			createNewBillingDir(args)
 		case "dir":
-			targetDir := "."
 			if len(args) > 1 {
 				targetDir = args[1]
 			}
 			fmt.Printf("\n targetDir is %s\n", targetDir)
 			parseDir(targetDir)
+			// TODO - make parseDir return a split, since non-dir parsing uses a split
+			//   then handle all actions after the if/else
 		default:
 			fmt.Println("Use `ting-bill-split new` or `new <billing-directory>` to create a new billing directory")
 			fmt.Println("Use `ting-bill-split dir <billing-directory>` to run on a directory containing a `bills.toml`, and CSV files for minutes, messages, and megabytes usage.")
