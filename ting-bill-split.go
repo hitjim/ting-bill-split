@@ -27,6 +27,7 @@ type bill struct {
 	DeviceIds    []string `toml:"deviceIds"`
 	ShortStrawID string   `toml:"shortStrawId"`
 	Total        float64  `toml:"total"`
+	Description  string   `toml:"description"`
 }
 
 // Used to contain all subtotals for a monthly bill.
@@ -360,6 +361,7 @@ func createBillsFile(path string) {
 		DeviceIds:    []string{},
 		ShortStrawID: "",
 		Total:        0.00,
+		Description:  "",
 	}
 
 	if err := toml.NewEncoder(f).Encode(newBills); err != nil {
@@ -481,18 +483,18 @@ func parseDir(path string) {
 		}
 		fmt.Println(split)
 
-		invoiceNames, err := generatePDF(split)
+		invoiceNames, err := generatePDF(split, billData)
 		if err != nil {
 			log.Fatal(err)
 		}
-		fmt.Printf("invoiceNames is: %s", invoiceNames)
+		fmt.Printf("Invoice generation complete: %s", invoiceNames)
 	}
 }
 
-func generatePDF(bs billSplit) ([]string, error) {
-	fileNames := []string{`test.pdf`}
+func generatePDF(bs billSplit, bd bill) (string, error) {
+	fileName := bd.Description + ".pdf"
 
-	fmt.Println(`Generating invoice TODO:filename PDFs in path TODO:path`)
+	fmt.Printf("Generating invoice %s\n\n", fileName)
 
 	// create new PDF of A4 page size
 	var pdf = pdf.NewPDF("A4")
@@ -504,15 +506,12 @@ func generatePDF(bs billSplit) ([]string, error) {
 	pdf.SetFont("Helvetica-Bold", 50).
 		SetXY(1, 2).
 		SetColor("#0ae").
-		DrawText("Ting Bill Split")
+		DrawText(bd.Description)
 
 	// TODO make this take a path in, for dir-mode splitting
-	err := pdf.SaveFile(fileNames[0])
+	err := pdf.SaveFile(fileName)
 
-	// TODO - once we're printing to multiple files, return the list
-	//  For now, just return fileNames
-
-	return fileNames, err
+	return fileName, err
 }
 
 func main() {
