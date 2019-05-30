@@ -323,22 +323,25 @@ func TestParseMaps(t *testing.T) {
 				Total:        118.84,
 			},
 			billSplit{
-				MinSubs: map[string]decimal.Decimal{
+				MinuteCosts: map[string]decimal.Decimal{
 					"1112220000": decimal.NewFromFloat(0).Round(DecimalPrecision),
 					"1112223333": decimal.NewFromFloat(26.25).Round(DecimalPrecision),
 					"1112224444": decimal.NewFromFloat(8.75).Round(DecimalPrecision),
 				},
-				MsgSubs: map[string]decimal.Decimal{
+				MinuteQty: map[string]int64{},
+				MessageCosts: map[string]decimal.Decimal{
 					"1112220000": decimal.NewFromFloat(0).Round(DecimalPrecision),
 					"1112223333": decimal.NewFromFloat(6.03).Round(DecimalPrecision),
 					"1112224444": decimal.NewFromFloat(1.97).Round(DecimalPrecision),
 				},
-				MegSubs: map[string]decimal.Decimal{
+				MessageQty: map[string]int64{},
+				MegabyteCosts: map[string]decimal.Decimal{
 					"1112220000": decimal.NewFromFloat(0).Round(DecimalPrecision),
 					"1112223333": decimal.NewFromFloat(14.55).Round(DecimalPrecision),
 					"1112224444": decimal.NewFromFloat(5.45).Round(DecimalPrecision),
 				},
-				DeltaSubs: map[string]decimal.Decimal{
+				MegabyteQty: map[string]int64{},
+				SharedCosts: map[string]decimal.Decimal{
 					"1112223333": decimal.NewFromFloat(18.61).Round(DecimalPrecision),
 					"1112224444": decimal.NewFromFloat(18.61).Round(DecimalPrecision),
 					"1112220000": decimal.NewFromFloat(18.62).Round(DecimalPrecision),
