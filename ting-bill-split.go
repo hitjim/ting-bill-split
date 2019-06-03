@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strconv"
 
@@ -377,6 +378,7 @@ func createBillsFile(path string) {
 // For a fileName string, return true if it contains the nameTerm anywhere.
 // If an empty string is provided for `ext`, no extension matching is performed.
 // Otherwise additional file extension matching is performed.
+// TODO LATER - maybe use path/filepath.Match
 func isFileMatch(fileName string, nameTerm string, ext string) bool {
 	r := regexp.MustCompile(`(?i)^[\w-]*` + nameTerm + `[\w-]*$`)
 
@@ -488,7 +490,9 @@ func parseDir(path string) {
 		}
 		fmt.Println(split)
 
-		invoiceNames, err := generatePDF(split, billData)
+		pdfFilePath := filepath.Join(path, billData.Description+".pdf")
+
+		invoiceNames, err := generatePDF(split, billData, pdfFilePath)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -496,18 +500,17 @@ func parseDir(path string) {
 	}
 }
 
-func generatePDF(bs billSplit, b bill) (string, error) {
-	fileName := b.Description + ".pdf"
+func generatePDF(bs billSplit, b bill, filePath string) (string, error) {
 	lineY := 0.0
 
-	fmt.Printf("Generating invoice %s\n\n", fileName)
+	fmt.Printf("Generating invoice %s\n\n", filePath)
 
 	// create new PDF of A4 page size
 	var doc = pdf.NewPDF("A4")
 	doc.SetUnits("cm")
 	doc.DrawUnitGrid() // TODO: remove grid after completion
 
-	// TODO add dates to bill. For now, entering manually in the "description" field in bill.toml
+	// TODO LATER - add dates to bill. For now, entering manually in the "description" field in bill.toml
 	// Future: generate a range off min/max dates in usage files?
 	// Or maybe just have a new field in toml?
 
@@ -517,9 +520,9 @@ func generatePDF(bs billSplit, b bill) (string, error) {
 	lineY += 2.0
 
 	// TODO make this take a path in, for dir-mode splitting
-	err := doc.SaveFile(fileName)
+	err := doc.SaveFile(filePath)
 
-	return fileName, err
+	return filePath, err
 }
 
 func main() {
