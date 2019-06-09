@@ -222,19 +222,23 @@ func TestParseBill(t *testing.T) {
 messages = 8.00
 megabytes = 20.00
 devices = 42.00
-extras = 1.00
+extraMinutes = 1.00
+extraMessages = 2.00
+extraMegabytes = 3.00
 fees = 12.84
 deviceIds = [ "1112223333", "1112224444", "1112220000" ]
 shortStrawId = "1112220000"`,
 			bill{
-				Minutes:      35.00,
-				Messages:     8.00,
-				Megabytes:    20.00,
-				Devices:      42.00,
-				Extras:       1.00,
-				Fees:         12.84,
-				DeviceIds:    []string{"1112223333", "1112224444", "1112220000"},
-				ShortStrawID: "1112220000",
+				Minutes:        35.00,
+				Messages:       8.00,
+				Megabytes:      20.00,
+				Devices:        42.00,
+				ExtraMinutes:   1.00,
+				ExtraMessages:  2.00,
+				ExtraMegabytes: 3.00,
+				Fees:           12.84,
+				DeviceIds:      []string{"1112223333", "1112224444", "1112220000"},
+				ShortStrawID:   "1112220000",
 			},
 		},
 		{
@@ -242,19 +246,23 @@ shortStrawId = "1112220000"`,
 messages = 8.00
 megabytes = 20.00
 devices = 42.00
-extras = 1.00
+extraMinutes = 1.00
+extraMessages = 2.00
+extraMegabytes = 3.00
 fees = 12.84
 deviceIds = [ "1112223333", "1112224444", "1112220000" ]
 shortStrawId = "wrongnumber"`,
 			bill{
-				Minutes:      35.00,
-				Messages:     8.00,
-				Megabytes:    20.00,
-				Devices:      42.00,
-				Extras:       1.00,
-				Fees:         12.84,
-				DeviceIds:    []string{"1112223333", "1112224444", "1112220000"},
-				ShortStrawID: "1112223333",
+				Minutes:        35.00,
+				Messages:       8.00,
+				Megabytes:      20.00,
+				Devices:        42.00,
+				ExtraMinutes:   1.00,
+				ExtraMessages:  2.00,
+				ExtraMegabytes: 3.00,
+				Fees:           12.84,
+				DeviceIds:      []string{"1112223333", "1112224444", "1112220000"},
+				ShortStrawID:   "1112223333",
 			},
 		},
 		{
@@ -262,18 +270,22 @@ shortStrawId = "wrongnumber"`,
 messages = 8.00
 megabytes = 20.00
 devices = 42.00
-extras = 1.00
+extraMinutes = 1.00
+extraMessages = 2.00
+extraMegabytes = 3.00
 fees = 12.84
 deviceIds = [ "1112223333", "1112224444", "1112220000" ]`,
 			bill{
-				Minutes:      35.00,
-				Messages:     8.00,
-				Megabytes:    20.00,
-				Devices:      42.00,
-				Extras:       1.00,
-				Fees:         12.84,
-				DeviceIds:    []string{"1112223333", "1112224444", "1112220000"},
-				ShortStrawID: "1112223333",
+				Minutes:        35.00,
+				Messages:       8.00,
+				Megabytes:      20.00,
+				Devices:        42.00,
+				ExtraMinutes:   1.00,
+				ExtraMessages:  2.00,
+				ExtraMegabytes: 3.00,
+				Fees:           12.84,
+				DeviceIds:      []string{"1112223333", "1112224444", "1112220000"},
+				ShortStrawID:   "1112223333",
 			},
 		},
 	}
@@ -300,7 +312,7 @@ func TestParseMaps(t *testing.T) {
 	}{
 		{
 			map[string]int{
-				"1112223333": 3,
+				"1112223333": 4,
 				"1112224444": 1,
 			},
 			map[string]int{
@@ -312,39 +324,53 @@ func TestParseMaps(t *testing.T) {
 				"1112224444": 2999,
 			},
 			bill{
-				Minutes:      35.00,
-				Messages:     8.00,
-				Megabytes:    20.00,
-				Devices:      42.00,
-				Extras:       1.00,
-				Fees:         12.84,
-				DeviceIds:    []string{"1112223333", "1112224444", "1112220000"},
-				ShortStrawID: "1112220000",
-				Total:        118.84,
+				Minutes:        35.00,
+				Messages:       8.00,
+				Megabytes:      20.00,
+				Devices:        42.00,
+				ExtraMinutes:   1.00,
+				ExtraMessages:  2.00,
+				ExtraMegabytes: 3.00,
+				Fees:           12.85,
+				DeviceIds:      []string{"1112223333", "1112224444", "1112220000"},
+				ShortStrawID:   "1112220000",
+				Total:          118.84,
 			},
 			billSplit{
 				MinuteCosts: map[string]decimal.Decimal{
 					"1112220000": decimal.NewFromFloat(0).Round(DecimalPrecision),
-					"1112223333": decimal.NewFromFloat(26.25).Round(DecimalPrecision),
-					"1112224444": decimal.NewFromFloat(8.75).Round(DecimalPrecision),
+					"1112223333": decimal.NewFromFloat(28.80).Round(DecimalPrecision),
+					"1112224444": decimal.NewFromFloat(7.20).Round(DecimalPrecision),
 				},
-				MinuteQty: map[string]int64{},
+				MinuteQty: map[string]int{
+					"1112220000": 0,
+					"1112223333": 4,
+					"1112224444": 1,
+				},
 				MessageCosts: map[string]decimal.Decimal{
 					"1112220000": decimal.NewFromFloat(0).Round(DecimalPrecision),
-					"1112223333": decimal.NewFromFloat(6.03).Round(DecimalPrecision),
-					"1112224444": decimal.NewFromFloat(1.97).Round(DecimalPrecision),
+					"1112223333": decimal.NewFromFloat(7.54).Round(DecimalPrecision),
+					"1112224444": decimal.NewFromFloat(2.46).Round(DecimalPrecision),
 				},
-				MessageQty: map[string]int64{},
+				MessageQty: map[string]int{
+					"1112220000": 0,
+					"1112223333": 4696,
+					"1112224444": 1532,
+				},
 				MegabyteCosts: map[string]decimal.Decimal{
 					"1112220000": decimal.NewFromFloat(0).Round(DecimalPrecision),
-					"1112223333": decimal.NewFromFloat(14.55).Round(DecimalPrecision),
-					"1112224444": decimal.NewFromFloat(5.45).Round(DecimalPrecision),
+					"1112223333": decimal.NewFromFloat(16.73).Round(DecimalPrecision),
+					"1112224444": decimal.NewFromFloat(6.27).Round(DecimalPrecision),
 				},
-				MegabyteQty: map[string]int64{},
+				MegabyteQty: map[string]int{
+					"1112220000": 0,
+					"1112223333": 8001,
+					"1112224444": 2999,
+				},
 				SharedCosts: map[string]decimal.Decimal{
-					"1112223333": decimal.NewFromFloat(18.61).Round(DecimalPrecision),
-					"1112224444": decimal.NewFromFloat(18.61).Round(DecimalPrecision),
-					"1112220000": decimal.NewFromFloat(18.62).Round(DecimalPrecision),
+					"1112223333": decimal.NewFromFloat(18.28).Round(DecimalPrecision),
+					"1112224444": decimal.NewFromFloat(18.28).Round(DecimalPrecision),
+					"1112220000": decimal.NewFromFloat(18.29).Round(DecimalPrecision),
 				},
 			},
 		},

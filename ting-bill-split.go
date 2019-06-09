@@ -19,16 +19,18 @@ import (
 )
 
 type bill struct {
-	Minutes      float64  `toml:"minutes"`
-	Messages     float64  `toml:"messages"`
-	Megabytes    float64  `toml:"megabytes"`
-	Devices      float64  `toml:"devices"`
-	Extras       float64  `toml:"extras"`
-	Fees         float64  `toml:"fees"`
-	DeviceIds    []string `toml:"deviceIds"`
-	ShortStrawID string   `toml:"shortStrawId"`
-	Total        float64  `toml:"total"`
-	Description  string   `toml:"description"`
+	Minutes        float64  `toml:"minutes"`
+	Messages       float64  `toml:"messages"`
+	Megabytes      float64  `toml:"megabytes"`
+	Devices        float64  `toml:"devices"`
+	ExtraMinutes   float64  `toml:"extraMinutes"`
+	ExtraMessages  float64  `toml:"extraMessages"`
+	ExtraMegabytes float64  `toml:"extraMegabytes"`
+	Fees           float64  `toml:"fees"`
+	DeviceIds      []string `toml:"deviceIds"`
+	ShortStrawID   string   `toml:"shortStrawId"`
+	Total          float64  `toml:"total"`
+	Description    string   `toml:"description"`
 }
 
 // Used to contain all subtotals for a monthly bill.
@@ -37,32 +39,32 @@ type bill struct {
 // SharedCosts reflect the rest of the items not based on usage, which get split evenly across all deviceIds
 type billSplit struct {
 	MinuteCosts   map[string]decimal.Decimal
-	MinuteQty     map[string]int64
+	MinuteQty     map[string]int
 	MessageCosts  map[string]decimal.Decimal
-	MessageQty    map[string]int64
+	MessageQty    map[string]int
 	MegabyteCosts map[string]decimal.Decimal
-	MegabyteQty   map[string]int64
+	MegabyteQty   map[string]int
 	SharedCosts   map[string]decimal.Decimal
 }
 
 func parseMaps(min map[string]int, msg map[string]int, meg map[string]int, bil bill) (billSplit, error) {
 	bs := billSplit{
 		make(map[string]decimal.Decimal),
-		make(map[string]int64),
+		make(map[string]int),
 		make(map[string]decimal.Decimal),
-		make(map[string]int64),
+		make(map[string]int),
 		make(map[string]decimal.Decimal),
-		make(map[string]int64),
+		make(map[string]int),
 		make(map[string]decimal.Decimal),
 	}
 	var usedMin, usedMsg, usedMeg int
 	DecimalPrecision := int32(6)
 	RoundPrecision := int32(2)
 
-	bilMinutes := decimal.NewFromFloat(bil.Minutes)
-	bilMessages := decimal.NewFromFloat(bil.Messages)
-	bilMegabytes := decimal.NewFromFloat(bil.Megabytes)
-	delta := decimal.NewFromFloat(bil.Devices + bil.Extras + bil.Fees).Round(DecimalPrecision)
+	bilMinutes := decimal.NewFromFloat(bil.Minutes + bil.ExtraMinutes)
+	bilMessages := decimal.NewFromFloat(bil.Messages + bil.ExtraMessages)
+	bilMegabytes := decimal.NewFromFloat(bil.Megabytes + bil.ExtraMegabytes)
+	delta := decimal.NewFromFloat(bil.Devices + bil.Fees).Round(DecimalPrecision)
 	deviceQty := decimal.New(int64(len(bil.DeviceIds)), 0)
 
 	// Calculate usage totals
@@ -83,16 +85,34 @@ func parseMaps(min map[string]int, msg map[string]int, meg map[string]int, bil b
 		totalMin := decimal.New(int64(usedMin), DecimalPrecision)
 		percentMin := subMin.DivRound(totalMin, DecimalPrecision)
 		bs.MinuteCosts[id] = percentMin.Mul(bilMinutes).Round(RoundPrecision)
+		// It's possible for a device to still be on the bill, but not show any usage data
+		if value, exists := min[id]; exists {
+			bs.MinuteQty[id] = value
+		} else {
+			bs.MinuteQty[id] = 0
+		}
 
 		subMsg := decimal.New(int64(msg[id]), DecimalPrecision)
 		totalMsg := decimal.New(int64(usedMsg), DecimalPrecision)
 		percentMsg := subMsg.DivRound(totalMsg, DecimalPrecision)
 		bs.MessageCosts[id] = percentMsg.Mul(bilMessages).Round(RoundPrecision)
+		// It's possible for a device to still be on the bill, but not show any usage data
+		if value, exists := msg[id]; exists {
+			bs.MessageQty[id] = value
+		} else {
+			bs.MessageQty[id] = 0
+		}
 
 		subMeg := decimal.New(int64(meg[id]), DecimalPrecision)
 		totalMeg := decimal.New(int64(usedMeg), DecimalPrecision)
 		percentMeg := subMeg.DivRound(totalMeg, DecimalPrecision)
 		bs.MegabyteCosts[id] = percentMeg.Mul(bilMegabytes).Round(RoundPrecision)
+		// It's possible for a device to still be on the bill, but not show any usage data
+		if value, exists := meg[id]; exists {
+			bs.MegabyteQty[id] = value
+		} else {
+			bs.MegabyteQty[id] = 0
+		}
 
 		bs.SharedCosts[id] = delta.DivRound(deviceQty, RoundPrecision)
 	}
@@ -358,16 +378,18 @@ func createBillsFile(path string) {
 	}
 
 	newBills := bill{
-		Minutes:      0.00,
-		Messages:     0.00,
-		Megabytes:    0.00,
-		Devices:      0.00,
-		Extras:       0.00,
-		Fees:         0.00,
-		DeviceIds:    []string{"1112223333", "2229998888", "etc"},
-		ShortStrawID: "1112223333",
-		Total:        0.00,
-		Description:  "Ting Bill YYYY-MM-DD",
+		Minutes:        0.00,
+		Messages:       0.00,
+		Megabytes:      0.00,
+		Devices:        0.00,
+		ExtraMinutes:   0.00,
+		ExtraMessages:  0.00,
+		ExtraMegabytes: 0.00,
+		Fees:           0.00,
+		DeviceIds:      []string{"1112223333", "2229998888", "etc"},
+		ShortStrawID:   "1112223333",
+		Total:          0.00,
+		Description:    "Ting Bill YYYY-MM-DD",
 	}
 
 	if err := toml.NewEncoder(f).Encode(newBills); err != nil {
