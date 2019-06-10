@@ -14,7 +14,7 @@ import (
 	"strconv"
 
 	"github.com/BurntSushi/toml"
-	"github.com/balacode/one-file-pdf"
+	"github.com/jung-kurt/gofpdf"
 	"github.com/shopspring/decimal"
 )
 
@@ -523,26 +523,31 @@ func parseDir(path string) {
 }
 
 func generatePDF(bs billSplit, b bill, filePath string) (string, error) {
-	lineY := 0.0
-
 	fmt.Printf("Generating invoice %s\n\n", filePath)
 
+	pdf := gofpdf.New("P", "mm", "A4", "")
+	pdf.AddPage()
+	pdf.SetFont("Arial", "B", 16)
+	pdf.Cell(40, 10, b.Description)
+
+	err := pdf.OutputFileAndClose(filePath)
+
 	// create new PDF of A4 page size
-	var doc = pdf.NewPDF("A4")
-	doc.SetUnits("cm")
-	doc.DrawUnitGrid() // TODO: remove grid after completion
+	// var doc = pdf.NewPDF("A4")
+	// doc.SetUnits("cm")
+	// doc.DrawUnitGrid() // TODO: remove grid after completion
 
 	// TODO LATER - add dates to bill. For now, entering manually in the "description" field in bill.toml
 	// Future: generate a range off min/max dates in usage files?
 	// Or maybe just have a new field in toml?
 
-	doc.SetFont("Helvetica-Bold", 30).
-		SetColor("#0ae").
-		DrawTextInBox(1, lineY, 19, 2, "C", b.Description)
-	lineY += 2.0
+	// doc.SetFont("Helvetica-Bold", 30).
+	// 	SetColor("#0ae").
+	// 	DrawTextInBox(1, lineY, 19, 2, "C", b.Description)
+	// lineY += 2.0
 
 	// TODO make this take a path in, for dir-mode splitting
-	err := doc.SaveFile(filePath)
+	// err := doc.SaveFile(filePath)
 
 	return filePath, err
 }
