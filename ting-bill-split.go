@@ -524,30 +524,60 @@ func parseDir(path string) {
 
 func generatePDF(bs billSplit, b bill, filePath string) (string, error) {
 	fmt.Printf("Generating invoice %s\n\n", filePath)
+	header := []string{"header1", "header2", "header3", "header4"}
+	type country struct {
+		nameStr, capitalStr, smellStr, birdStr string
+	}
+
+	countryList := []country{
+		{"country1", "capital1", "smell1", "bird1"},
+		{"country2", "capital2", "smell2", "bird2"},
+		{"c3", "cap2", "sm2", "brd2"},
+		{"Jupiter", "Mars", "farts", "toots"},
+	}
 
 	pdf := gofpdf.New("P", "mm", "A4", "")
 	pdf.AddPage()
 	pdf.SetFont("Arial", "B", 16)
 	pdf.Cell(40, 10, b.Description)
 
-	err := pdf.OutputFileAndClose(filePath)
+	improvedTable := func() {
+		// Column widths
+		w := []float64{40.0, 35.0, 40.0, 45.0}
+		wSum := 0.0
+		for _, v := range w {
+			wSum += v
+		}
+		left := (210 - wSum) / 2
+		// 	Header
+		pdf.SetY(20)
+		pdf.SetX(left)
+		for j, str := range header {
+			pdf.CellFormat(w[j], 7, str, "1", 0, "C", false, 0, "")
+		}
+		pdf.Ln(-1)
+		// Data
+		for _, c := range countryList {
+			pdf.SetX(left)
+			pdf.CellFormat(w[0], 6, c.nameStr, "LR", 0, "", false, 0, "")
+			pdf.CellFormat(w[1], 6, c.capitalStr, "LR", 0, "", false, 0, "")
+			pdf.CellFormat(w[2], 6, c.smellStr, "LR", 0, "R", false, 0, "")
+			pdf.CellFormat(w[3], 6, c.birdStr, "LR", 0, "R", false, 0, "")
+			pdf.Ln(-1)
+		}
+		pdf.SetX(left)
+		pdf.CellFormat(wSum, 0, "", "T", 0, "", false, 0, "")
+	}
 
-	// create new PDF of A4 page size
-	// var doc = pdf.NewPDF("A4")
-	// doc.SetUnits("cm")
-	// doc.DrawUnitGrid() // TODO: remove grid after completion
+	improvedTable()
+
+	err := pdf.OutputFileAndClose(filePath)
 
 	// TODO LATER - add dates to bill. For now, entering manually in the "description" field in bill.toml
 	// Future: generate a range off min/max dates in usage files?
 	// Or maybe just have a new field in toml?
 
-	// doc.SetFont("Helvetica-Bold", 30).
-	// 	SetColor("#0ae").
-	// 	DrawTextInBox(1, lineY, 19, 2, "C", b.Description)
-	// lineY += 2.0
-
 	// TODO make this take a path in, for dir-mode splitting
-	// err := doc.SaveFile(filePath)
 
 	return filePath, err
 }
