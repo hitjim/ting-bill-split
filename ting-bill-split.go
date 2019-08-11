@@ -536,6 +536,26 @@ func generatePDF(bs billSplit, b bill, filePath string) (string, error) {
 		{"Jupiter", "Mars", "farts", "toots"},
 	}
 
+	// Top Heading: bill title with invoice date; Device qty; Bill total; split total, Usage subtotal $, Devices subtotal $, Tax+reg subtotal
+
+	// Table 1: Usage
+	// heading: number, nickname?, min, msg, data (KB), min%, msg%, data%
+	// Then entries for each number
+	// then entry for "Total" under nickname, and rest of sums
+
+	// Table 2: Weighted costs
+	// heading: Weighted Costs: Minutes, Messages, Data
+	// Base: $x, $y, $z
+	// Extra: etc
+	// Total: etc
+
+	// Table 3: Shared costs
+	// heading: Type, Amount
+
+	// Table 4: Costs split
+	// heading: number, Nickname, Min, Msg, Data, Shared, Total
+	// entry for each number
+
 	pdf := gofpdf.New("P", "mm", "A4", "")
 	pdf.AddPage()
 	pdf.SetFont("Arial", "B", 16)
