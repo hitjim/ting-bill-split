@@ -19,18 +19,18 @@ import (
 )
 
 type bill struct {
+	Description    string   `toml:"description"`
+	DeviceIds      []string `toml:"deviceIds"`
+	ShortStrawID   string   `toml:"shortStrawId"`
+	Total          float64  `toml:"total"`
+	Devices        float64  `toml:"devices"`
 	Minutes        float64  `toml:"minutes"`
 	Messages       float64  `toml:"messages"`
 	Megabytes      float64  `toml:"megabytes"`
-	Devices        float64  `toml:"devices"`
 	ExtraMinutes   float64  `toml:"extraMinutes"`
 	ExtraMessages  float64  `toml:"extraMessages"`
 	ExtraMegabytes float64  `toml:"extraMegabytes"`
 	Fees           float64  `toml:"fees"`
-	DeviceIds      []string `toml:"deviceIds"`
-	ShortStrawID   string   `toml:"shortStrawId"`
-	Total          float64  `toml:"total"`
-	Description    string   `toml:"description"`
 }
 
 // Used to contain all subtotals for a monthly bill.
