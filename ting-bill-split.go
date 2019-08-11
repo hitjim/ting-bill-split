@@ -378,18 +378,18 @@ func createBillsFile(path string) {
 	}
 
 	newBills := bill{
+		Description:    "Ting Bill YYYY-MM-DD",
+		DeviceIds:      []string{"1112223333", "2229998888", "etc"},
+		ShortStrawID:   "1112223333",
+		Total:          0.00,
+		Devices:        0.00,
 		Minutes:        0.00,
 		Messages:       0.00,
 		Megabytes:      0.00,
-		Devices:        0.00,
 		ExtraMinutes:   0.00,
 		ExtraMessages:  0.00,
 		ExtraMegabytes: 0.00,
 		Fees:           0.00,
-		DeviceIds:      []string{"1112223333", "2229998888", "etc"},
-		ShortStrawID:   "1112223333",
-		Total:          0.00,
-		Description:    "Ting Bill YYYY-MM-DD",
 	}
 
 	if err := toml.NewEncoder(f).Encode(newBills); err != nil {
@@ -529,6 +529,12 @@ func generatePDF(bs billSplit, b bill, filePath string) (string, error) {
 		nameStr, capitalStr, smellStr, birdStr string
 	}
 
+	pageHeading := []string{"Invoice with date", "Devices Qty", "$Total", "$Calc", "$Usage", "$Devices", "$Tax+Reg"}
+	usageTableHeading := []string{"Phone Number", "Nickname", "Minutes", "Messages", "Data (KB)", "Min%", "Msg%", "Data%"}
+	weightedTableHeading := []string{"Cost Type", "Minutes", "Messages", "Data"}
+	sharedTableHeading := []string{"Cost Type", "Amount"}
+	costsSplitHeading := []string{"Phone Number", "Nickname", "$Min", "$Msg", "$Data"}
+
 	countryList := []country{
 		{"country1", "capital1", "smell1", "bird1"},
 		{"country2", "capital2", "smell2", "bird2"},
@@ -536,7 +542,10 @@ func generatePDF(bs billSplit, b bill, filePath string) (string, error) {
 		{"Jupiter", "Mars", "farts", "toots"},
 	}
 
-	// Top Heading: bill title with invoice date; Device qty; Bill total; split total, Usage subtotal $, Devices subtotal $, Tax+reg subtotal
+	// Page Heading: bill title with invoice date; Device qty; Bill total; split total, Usage subtotal $, Devices subtotal $, Tax+reg subtotal
+	pdf := gofpdf.New("P", "mm", "A4", "")
+	pdf.AddPage()
+	pdf.SetFont("Arial", "B", 12)
 
 	// Table 1: Usage
 	// heading: number, nickname?, min, msg, data (KB), min%, msg%, data%
@@ -556,9 +565,6 @@ func generatePDF(bs billSplit, b bill, filePath string) (string, error) {
 	// heading: number, Nickname, Min, Msg, Data, Shared, Total
 	// entry for each number
 
-	pdf := gofpdf.New("P", "mm", "A4", "")
-	pdf.AddPage()
-	pdf.SetFont("Arial", "B", 16)
 	pdf.Cell(40, 10, b.Description)
 
 	improvedTable := func() {
