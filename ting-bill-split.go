@@ -529,7 +529,6 @@ func generatePDF(bs billSplit, b bill, filePath string) (string, error) {
 		nameStr, capitalStr, smellStr, birdStr string
 	}
 
-	pageHeading := []string{"Invoice with date", "Devices Qty", "$Total", "$Calc", "$Usage", "$Devices", "$Tax+Reg"}
 	usageTableHeading := []string{"Phone Number", "Nickname", "Minutes", "Messages", "Data (KB)", "Min%", "Msg%", "Data%"}
 	weightedTableHeading := []string{"Cost Type", "Minutes", "Messages", "Data"}
 	sharedTableHeading := []string{"Cost Type", "Amount"}
@@ -565,7 +564,22 @@ func generatePDF(bs billSplit, b bill, filePath string) (string, error) {
 	// heading: number, Nickname, Min, Msg, Data, Shared, Total
 	// entry for each number
 
-	pdf.Cell(40, 10, b.Description)
+	headingTable := func() {
+		pageHeading := []string{"Invoice with date", "Devices Qty", "$Total", "$Calc", "$Usage", "$Devices", "$Tax+Reg"}
+		w := []float64{40.0, 15.0, 15.0, 15.0, 15.0, 15.0, 15.0}
+		wSum := 0.0
+		for _, v := range w {
+			wSum += v
+		}
+		left := (210 - wSum) / 2
+		pdf.SetY(20)
+		pdf.SetX(left)
+		for j, str := range pageHeading {
+			pdf.CellFormat(w[j], 7, str, "1", 0, "C", false, 0, "")
+		}
+		pdf.Ln(-1)
+	}
+	headingTable()
 
 	improvedTable := func() {
 		// Column widths
