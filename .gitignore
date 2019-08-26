@@ -30,4 +30,5 @@ _testmain.go
 *.prof
 
 # Editor noise
-*.swp
+**.swp
+**.code-workspace

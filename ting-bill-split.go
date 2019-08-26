@@ -524,92 +524,128 @@ func parseDir(path string) {
 
 func generatePDF(bs billSplit, b bill, filePath string) (string, error) {
 	fmt.Printf("Generating invoice %s\n\n", filePath)
-	header := []string{"header1", "header2", "header3", "header4"}
-	type country struct {
-		nameStr, capitalStr, smellStr, birdStr string
-	}
 
-	usageTableHeading := []string{"Phone Number", "Nickname", "Minutes", "Messages", "Data (KB)", "Min%", "Msg%", "Data%"}
-	weightedTableHeading := []string{"Cost Type", "Minutes", "Messages", "Data"}
-	sharedTableHeading := []string{"Cost Type", "Amount"}
-	costsSplitHeading := []string{"Phone Number", "Nickname", "$Min", "$Msg", "$Data"}
+	// weightedTableHeading := []string{"Cost Type", "Minutes", "Messages", "Data"}
+	// sharedTableHeading := []string{"Cost Type", "Amount"}
+	// costsSplitHeading := []string{"Phone Number", "Nickname", "$Min", "$Msg", "$Data"}
 
-	countryList := []country{
-		{"country1", "capital1", "smell1", "bird1"},
-		{"country2", "capital2", "smell2", "bird2"},
-		{"c3", "cap2", "sm2", "brd2"},
-		{"Jupiter", "Mars", "farts", "toots"},
-	}
-
-	// Page Heading: bill title with invoice date; Device qty; Bill total; split total, Usage subtotal $, Devices subtotal $, Tax+reg subtotal
 	pdf := gofpdf.New("P", "mm", "A4", "")
 	pdf.AddPage()
-	pdf.SetFont("Arial", "B", 12)
+	pdf.SetFont("Arial", "B", 10)
+	pdf.SetXY(20, 20)
 
-	// Table 1: Usage
+	// Table 0: Heading - 7 rows
+	// heading: Invoice filename w/date, Device qty, Bill Total, Split Total
+	//   (for comparison), Usage subtotal, Devices Subtotal, Tax+Reg subtotal"
+	headingTable := func(b bill, bs billSplit) {
+		pageHeading := []string{"Invoice with date", "Devices Qty", "$Total", "$Calc", "$Usage", "$Devices", "$Tax+Reg"}
+		w := []float64{40.0, 25.0, 20.0, 20.0, 20.0, 20.0, 20.0}
+
+		for j, str := range pageHeading {
+			pdf.CellFormat(w[j], 7, str, "1", 0, "C", false, 0, "")
+		}
+		pdf.Ln(-1)
+
+		minCosts := decimal.New(0, 1)
+		msgCosts := decimal.New(0, 1)
+		megCosts := decimal.New(0, 1)
+		shrCosts := decimal.New(0, 1)
+
+		for _, v := range bs.MinuteCosts {
+			minCosts = minCosts.Add(v)
+		}
+
+		for _, v := range bs.MessageCosts {
+			msgCosts = msgCosts.Add(v)
+		}
+		for _, v := range bs.MegabyteCosts {
+			megCosts = megCosts.Add(v)
+		}
+		for _, v := range bs.SharedCosts {
+			shrCosts = shrCosts.Add(v)
+		}
+
+		calcCost := decimal.Sum(minCosts, msgCosts, megCosts, shrCosts)
+		usgCost := decimal.Sum(minCosts, megCosts, shrCosts)
+
+		values := []string{
+			b.Description,
+			strconv.Itoa(len(b.DeviceIds)),
+			strconv.FormatFloat(b.Total, 'f', 2, 64),
+			calcCost.StringFixed(2),
+			usgCost.StringFixed(2),
+			strconv.FormatFloat(b.Devices, 'f', 2, 64),
+			strconv.FormatFloat(b.Fees, 'f', 2, 64),
+		}
+
+		pdf.SetX(20)
+
+		for j, str := range values {
+			pdf.CellFormat(w[j], 7, str, "1", 0, "C", false, 0, "")
+		}
+		pdf.Ln(-1)
+	}
+	headingTable(b, bs)
+
+	// Table 1: Usage - 8 rows
 	// heading: number, nickname?, min, msg, data (KB), min%, msg%, data%
 	// Then entries for each number
 	// then entry for "Total" under nickname, and rest of sums
+	usageTable := func(split billSplit) {
+		usageTableHeading := []string{"Phone Number", "Nickname", "Minutes", "Messages", "Data (KB)", "Min%", "Msg%", "Data%"}
+		w := []float64{40.0, 15.0, 15.0, 15.0, 15.0, 15.0, 15.0, 15.0}
+		pdf.SetXY(20, pdf.GetY()+5)
 
-	// Table 2: Weighted costs
+		for j, str := range usageTableHeading {
+			pdf.CellFormat(w[j], 7, str, "1", 0, "C", false, 0, "")
+		}
+		pdf.Ln(-1)
+
+		fmt.Println(split)
+		fmt.Println("just printed split to get it to shut up")
+	}
+	usageTable(bs)
+
+	// Table 2: Weighted costs - 3 rows
 	// heading: Weighted Costs: Minutes, Messages, Data
 	// Base: $x, $y, $z
 	// Extra: etc
 	// Total: etc
 
-	// Table 3: Shared costs
+	// Table 3: Shared costs - 2 rows
 	// heading: Type, Amount
 
-	// Table 4: Costs split
+	// Table 4: Costs split - 7
 	// heading: number, Nickname, Min, Msg, Data, Shared, Total
 	// entry for each number
 
-	headingTable := func() {
-		pageHeading := []string{"Invoice with date", "Devices Qty", "$Total", "$Calc", "$Usage", "$Devices", "$Tax+Reg"}
-		w := []float64{40.0, 15.0, 15.0, 15.0, 15.0, 15.0, 15.0}
-		wSum := 0.0
-		for _, v := range w {
-			wSum += v
-		}
-		left := (210 - wSum) / 2
-		pdf.SetY(20)
-		pdf.SetX(left)
-		for j, str := range pageHeading {
-			pdf.CellFormat(w[j], 7, str, "1", 0, "C", false, 0, "")
-		}
-		pdf.Ln(-1)
-	}
-	headingTable()
-
-	improvedTable := func() {
-		// Column widths
-		w := []float64{40.0, 35.0, 40.0, 45.0}
-		wSum := 0.0
-		for _, v := range w {
-			wSum += v
-		}
-		left := (210 - wSum) / 2
-		// 	Header
-		pdf.SetY(20)
-		pdf.SetX(left)
-		for j, str := range header {
-			pdf.CellFormat(w[j], 7, str, "1", 0, "C", false, 0, "")
-		}
-		pdf.Ln(-1)
-		// Data
-		for _, c := range countryList {
-			pdf.SetX(left)
-			pdf.CellFormat(w[0], 6, c.nameStr, "LR", 0, "", false, 0, "")
-			pdf.CellFormat(w[1], 6, c.capitalStr, "LR", 0, "", false, 0, "")
-			pdf.CellFormat(w[2], 6, c.smellStr, "LR", 0, "R", false, 0, "")
-			pdf.CellFormat(w[3], 6, c.birdStr, "LR", 0, "R", false, 0, "")
-			pdf.Ln(-1)
-		}
-		pdf.SetX(left)
-		pdf.CellFormat(wSum, 0, "", "T", 0, "", false, 0, "")
-	}
-
-	improvedTable()
+	// weightedTable := func(yPosition float64, cHeadings []string, bs billSplit) {
+	// 	// Column widths
+	// 	w := []float64{40.0, 35.0, 40.0, 45.0}
+	// 	wSum := 0.0
+	// 	for _, v := range w {
+	// 		wSum += v
+	// 	}
+	// 	left := (210 - wSum) / 2
+	// 	// Header
+	// 	pdf.SetY(yPosition)
+	// 	pdf.SetX(left)
+	// 	for j, str := range header {
+	// 		pdf.CellFormat(w[j], 7, str, "1", 0, "C", false, 0, "")
+	// 	}
+	// 	pdf.Ln(-1)
+	// 	// Data
+	// 	for _, c := range countryList {
+	// 		pdf.SetX(left)
+	// 		pdf.CellFormat(w[0], 6, c.nameStr, "LR", 0, "", false, 0, "")
+	// 		pdf.CellFormat(w[1], 6, c.capitalStr, "LR", 0, "", false, 0, "")
+	// 		pdf.CellFormat(w[2], 6, c.smellStr, "LR", 0, "R", false, 0, "")
+	// 		pdf.CellFormat(w[3], 6, c.birdStr, "LR", 0, "R", false, 0, "")
+	// 		pdf.Ln(-1)
+	// 	}
+	// 	pdf.SetX(left)
+	// 	pdf.CellFormat(wSum, 0, "", "T", 0, "", false, 0, "")
+	// }
 
 	err := pdf.OutputFileAndClose(filePath)
 
