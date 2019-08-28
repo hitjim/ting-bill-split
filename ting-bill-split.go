@@ -532,7 +532,7 @@ func generatePDF(bs billSplit, b bill, filePath string) (string, error) {
 	pdf := gofpdf.New("P", "mm", "A4", "")
 	pdf.AddPage()
 	pdf.SetFont("Arial", "B", 10)
-	pdf.SetXY(20, 20)
+	pdf.SetXY(10, 20)
 
 	// Table 0: Heading - 7 rows
 	// heading: Invoice filename w/date, Device qty, Bill Total, Split Total
@@ -541,11 +541,13 @@ func generatePDF(bs billSplit, b bill, filePath string) (string, error) {
 		pageHeading := []string{"Invoice with date", "Devices Qty", "$Total", "$Calc", "$Usage", "$Devices", "$Tax+Reg"}
 		w := []float64{40.0, 25.0, 20.0, 20.0, 20.0, 20.0, 20.0}
 
+		// Print heading
 		for j, str := range pageHeading {
 			pdf.CellFormat(w[j], 7, str, "1", 0, "C", false, 0, "")
 		}
 		pdf.Ln(-1)
 
+		// Prep data
 		minCosts := decimal.New(0, 1)
 		msgCosts := decimal.New(0, 1)
 		megCosts := decimal.New(0, 1)
@@ -578,8 +580,9 @@ func generatePDF(bs billSplit, b bill, filePath string) (string, error) {
 			strconv.FormatFloat(b.Fees, 'f', 2, 64),
 		}
 
-		pdf.SetX(20)
+		pdf.SetX(10)
 
+		// Print data
 		for j, str := range values {
 			pdf.CellFormat(w[j], 7, str, "1", 0, "C", false, 0, "")
 		}
@@ -593,8 +596,8 @@ func generatePDF(bs billSplit, b bill, filePath string) (string, error) {
 	// then entry for "Total" under nickname, and rest of sums
 	usageTable := func(split billSplit) {
 		usageTableHeading := []string{"Phone Number", "Nickname", "Minutes", "Messages", "Data (KB)", "Min%", "Msg%", "Data%"}
-		w := []float64{40.0, 15.0, 15.0, 15.0, 15.0, 15.0, 15.0, 15.0}
-		pdf.SetXY(20, pdf.GetY()+5)
+		w := []float64{40.0, 30.0, 25.0, 25.0, 25.0, 15.0, 15.0, 15.0}
+		pdf.SetXY(10, pdf.GetY()+5)
 
 		for j, str := range usageTableHeading {
 			pdf.CellFormat(w[j], 7, str, "1", 0, "C", false, 0, "")
