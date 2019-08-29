@@ -1,6 +1,9 @@
 # ting-bill-split directories
 invoices/
 
+# binaries
+ting-bill-split
+
 # Handy spot to try with real usage files
 real-bills/
 

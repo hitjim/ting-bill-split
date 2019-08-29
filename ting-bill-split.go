@@ -59,7 +59,6 @@ func parseMaps(min map[string]int, msg map[string]int, meg map[string]int, bil b
 	}
 	var usedMin, usedMsg, usedMeg int
 	DecimalPrecision := int32(6)
-	RoundPrecision := int32(2)
 
 	bilMinutes := decimal.NewFromFloat(bil.Minutes + bil.ExtraMinutes)
 	bilMessages := decimal.NewFromFloat(bil.Messages + bil.ExtraMessages)
@@ -84,7 +83,7 @@ func parseMaps(min map[string]int, msg map[string]int, meg map[string]int, bil b
 		subMin := decimal.New(int64(min[id]), DecimalPrecision)
 		totalMin := decimal.New(int64(usedMin), DecimalPrecision)
 		percentMin := subMin.DivRound(totalMin, DecimalPrecision)
-		bs.MinuteCosts[id] = percentMin.Mul(bilMinutes).Round(RoundPrecision)
+		bs.MinuteCosts[id] = percentMin.Mul(bilMinutes)
 		// It's possible for a device to still be on the bill, but not show any usage data
 		if value, exists := min[id]; exists {
 			bs.MinuteQty[id] = value
@@ -95,7 +94,7 @@ func parseMaps(min map[string]int, msg map[string]int, meg map[string]int, bil b
 		subMsg := decimal.New(int64(msg[id]), DecimalPrecision)
 		totalMsg := decimal.New(int64(usedMsg), DecimalPrecision)
 		percentMsg := subMsg.DivRound(totalMsg, DecimalPrecision)
-		bs.MessageCosts[id] = percentMsg.Mul(bilMessages).Round(RoundPrecision)
+		bs.MessageCosts[id] = percentMsg.Mul(bilMessages)
 		// It's possible for a device to still be on the bill, but not show any usage data
 		if value, exists := msg[id]; exists {
 			bs.MessageQty[id] = value
@@ -106,7 +105,7 @@ func parseMaps(min map[string]int, msg map[string]int, meg map[string]int, bil b
 		subMeg := decimal.New(int64(meg[id]), DecimalPrecision)
 		totalMeg := decimal.New(int64(usedMeg), DecimalPrecision)
 		percentMeg := subMeg.DivRound(totalMeg, DecimalPrecision)
-		bs.MegabyteCosts[id] = percentMeg.Mul(bilMegabytes).Round(RoundPrecision)
+		bs.MegabyteCosts[id] = percentMeg.Mul(bilMegabytes)
 		// It's possible for a device to still be on the bill, but not show any usage data
 		if value, exists := meg[id]; exists {
 			bs.MegabyteQty[id] = value
@@ -114,49 +113,49 @@ func parseMaps(min map[string]int, msg map[string]int, meg map[string]int, bil b
 			bs.MegabyteQty[id] = 0
 		}
 
-		bs.SharedCosts[id] = delta.DivRound(deviceQty, RoundPrecision)
+		bs.SharedCosts[id] = delta.DivRound(deviceQty, DecimalPrecision)
 	}
 
-	minSubSum := decimal.New(0, RoundPrecision)
+	minSubSum := decimal.New(0, DecimalPrecision)
 	for _, sub := range bs.MinuteCosts {
 		minSubSum = minSubSum.Add(sub)
 	}
 
 	minSubExtra := bilMinutes.Sub(minSubSum)
-	if minSubExtra.GreaterThan(decimal.New(0, RoundPrecision)) {
+	if minSubExtra.GreaterThan(decimal.New(0, DecimalPrecision)) {
 		fmt.Printf("Remainder minutes cost of $%s to deviceId %s\n", minSubExtra.String(), bil.ShortStrawID)
 		bs.MinuteCosts[bil.ShortStrawID].Add(minSubExtra)
 	} else {
 		fmt.Println("There was no remainder cost when splitting minutes.")
 	}
 
-	msgSubSum := decimal.New(0, RoundPrecision)
+	msgSubSum := decimal.New(0, DecimalPrecision)
 	for _, sub := range bs.MessageCosts {
 		msgSubSum = msgSubSum.Add(sub)
 	}
 
 	msgSubExtra := bilMessages.Sub(msgSubSum)
-	if msgSubExtra.GreaterThan(decimal.New(0, RoundPrecision)) {
+	if msgSubExtra.GreaterThan(decimal.New(0, DecimalPrecision)) {
 		fmt.Printf("Remainder messages cost of $%s to deviceId %s\n", msgSubExtra.String(), bil.ShortStrawID)
 		bs.MessageCosts[bil.ShortStrawID].Add(msgSubExtra)
 	} else {
 		fmt.Println("There was no remainder cost when splitting messages.")
 	}
 
-	megSubSum := decimal.New(0, RoundPrecision)
+	megSubSum := decimal.New(0, DecimalPrecision)
 	for _, sub := range bs.MegabyteCosts {
 		megSubSum = megSubSum.Add(sub)
 	}
 
 	megSubExtra := bilMessages.Sub(megSubSum)
-	if megSubExtra.GreaterThan(decimal.New(0, RoundPrecision)) {
+	if megSubExtra.GreaterThan(decimal.New(0, DecimalPrecision)) {
 		fmt.Printf("Remainder megabytes cost of $%s to deviceId %s\n", megSubExtra.String(), bil.ShortStrawID)
 		bs.MegabyteCosts[bil.ShortStrawID].Add(megSubExtra)
 	} else {
 		fmt.Println("There was no remainder cost when splitting megabytes.")
 	}
 
-	deltaSubSum := decimal.New(0, RoundPrecision)
+	deltaSubSum := decimal.New(0, DecimalPrecision)
 	fmt.Println("bs.SharedCosts is")
 	fmt.Println(bs.SharedCosts)
 	for _, sub := range bs.SharedCosts {
@@ -164,7 +163,7 @@ func parseMaps(min map[string]int, msg map[string]int, meg map[string]int, bil b
 	}
 
 	deltaSubExtra := delta.Sub(deltaSubSum)
-	if deltaSubExtra.GreaterThan(decimal.New(0, RoundPrecision)) {
+	if deltaSubExtra.GreaterThan(decimal.New(0, DecimalPrecision)) {
 		fmt.Printf("Remainder delta cost of $%s added to deviceId %s\n", deltaSubExtra.String(), bil.ShortStrawID)
 		bs.SharedCosts[bil.ShortStrawID] = bs.SharedCosts[bil.ShortStrawID].Add(deltaSubExtra)
 	} else {
@@ -524,6 +523,7 @@ func parseDir(path string) {
 
 func generatePDF(bs billSplit, b bill, filePath string) (string, error) {
 	fmt.Printf("Generating invoice %s\n\n", filePath)
+	RoundPrecision := int32(2)
 
 	// weightedTableHeading := []string{"Cost Type", "Minutes", "Messages", "Data"}
 	// sharedTableHeading := []string{"Cost Type", "Amount"}
@@ -540,6 +540,9 @@ func generatePDF(bs billSplit, b bill, filePath string) (string, error) {
 	headingTable := func(b bill, bs billSplit) {
 		pageHeading := []string{"Invoice with date", "Devices Qty", "$Total", "$Calc", "$Usage", "$Devices", "$Tax+Reg"}
 		w := []float64{40.0, 25.0, 20.0, 20.0, 20.0, 20.0, 20.0}
+
+		fmt.Println("BLARLJAKFJKALSJFDKLASJDFKLASD")
+		fmt.Println(bs)
 
 		// Print heading
 		for j, str := range pageHeading {
@@ -567,8 +570,8 @@ func generatePDF(bs billSplit, b bill, filePath string) (string, error) {
 			shrCosts = shrCosts.Add(v)
 		}
 
-		calcCost := decimal.Sum(minCosts, msgCosts, megCosts, shrCosts)
-		usgCost := decimal.Sum(minCosts, megCosts, shrCosts)
+		calcCost := decimal.Sum(minCosts, msgCosts, megCosts, shrCosts).Round(RoundPrecision)
+		usgCost := decimal.Sum(minCosts, megCosts, shrCosts).Round(RoundPrecision)
 
 		values := []string{
 			b.Description,
