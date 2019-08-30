@@ -571,7 +571,7 @@ func generatePDF(bs billSplit, b bill, filePath string) (string, error) {
 		}
 
 		calcCost := decimal.Sum(minCosts, msgCosts, megCosts, shrCosts).Round(RoundPrecision)
-		usgCost := decimal.Sum(minCosts, megCosts, shrCosts).Round(RoundPrecision)
+		usgCost := decimal.Sum(minCosts, msgCosts, megCosts).Round(RoundPrecision)
 
 		values := []string{
 			b.Description,
