@@ -37,14 +37,24 @@ type bill struct {
 // MinuteCosts, MessageCosts, MegabyteCosts are maps of decimal.Decimal totals.
 // They are split by bill.DeviceIds and calculated by usage in parseMaps.
 // SharedCosts reflect the rest of the items not based on usage, which get split evenly across all deviceIds
+// TODO: finish these comments
 type billSplit struct {
-	MinuteCosts   map[string]decimal.Decimal
-	MinuteQty     map[string]int
-	MessageCosts  map[string]decimal.Decimal
-	MessageQty    map[string]int
-	MegabyteCosts map[string]decimal.Decimal
-	MegabyteQty   map[string]int
-	SharedCosts   map[string]decimal.Decimal
+	MinuteCosts     map[string]decimal.Decimal
+	MinuteQty       map[string]int
+	MinutePercent   map[string]decimal.Decimal
+	MessageCosts    map[string]decimal.Decimal
+	MessageQty      map[string]int
+	MessagePercent  map[string]decimal.Decimal
+	MegabyteCosts   map[string]decimal.Decimal
+	MegabyteQty     map[string]int
+	MegabytePercent map[string]decimal.Decimal
+	SharedCosts     map[string]decimal.Decimal
+}
+
+type totals struct {
+	TotalMinutes int
+	TotalMessages int
+TotalMegabytes int
 }
 
 func parseMaps(min map[string]int, msg map[string]int, meg map[string]int, bil bill) (billSplit, error) {
@@ -52,9 +62,12 @@ func parseMaps(min map[string]int, msg map[string]int, meg map[string]int, bil b
 		make(map[string]decimal.Decimal),
 		make(map[string]int),
 		make(map[string]decimal.Decimal),
-		make(map[string]int),
 		make(map[string]decimal.Decimal),
 		make(map[string]int),
+		make(map[string]decimal.Decimal),
+		make(map[string]decimal.Decimal),
+		make(map[string]int),
+		make(map[string]decimal.Decimal),
 		make(map[string]decimal.Decimal),
 	}
 	var usedMin, usedMsg, usedMeg int
@@ -79,11 +92,14 @@ func parseMaps(min map[string]int, msg map[string]int, meg map[string]int, bil b
 		usedMeg += v
 	}
 
+	totalMin := decimal.New(int64(usedMin), DecimalPrecision)
+	totalMsg := decimal.New(int64(usedMsg), DecimalPrecision)
+	totalMeg := decimal.New(int64(usedMeg), DecimalPrecision)
+
 	for _, id := range bil.DeviceIds {
 		subMin := decimal.New(int64(min[id]), DecimalPrecision)
-		totalMin := decimal.New(int64(usedMin), DecimalPrecision)
-		percentMin := subMin.DivRound(totalMin, DecimalPrecision)
-		bs.MinuteCosts[id] = percentMin.Mul(bilMinutes)
+		bs.MinutePercent[id] := subMin.DivRound(totalMin, DecimalPrecision)
+		bs.MinuteCosts[id] = bs.MinutePercent[id].Mul(bilMinutes)
 		// It's possible for a device to still be on the bill, but not show any usage data
 		if value, exists := min[id]; exists {
 			bs.MinuteQty[id] = value
@@ -92,9 +108,8 @@ func parseMaps(min map[string]int, msg map[string]int, meg map[string]int, bil b
 		}
 
 		subMsg := decimal.New(int64(msg[id]), DecimalPrecision)
-		totalMsg := decimal.New(int64(usedMsg), DecimalPrecision)
-		percentMsg := subMsg.DivRound(totalMsg, DecimalPrecision)
-		bs.MessageCosts[id] = percentMsg.Mul(bilMessages)
+		bs.MessagePercent[id] := subMsg.DivRound(totalMsg, DecimalPrecision)
+		bs.MessageCosts[id] = bs.MessagePercent[id].Mul(bilMessages)
 		// It's possible for a device to still be on the bill, but not show any usage data
 		if value, exists := msg[id]; exists {
 			bs.MessageQty[id] = value
@@ -103,9 +118,8 @@ func parseMaps(min map[string]int, msg map[string]int, meg map[string]int, bil b
 		}
 
 		subMeg := decimal.New(int64(meg[id]), DecimalPrecision)
-		totalMeg := decimal.New(int64(usedMeg), DecimalPrecision)
-		percentMeg := subMeg.DivRound(totalMeg, DecimalPrecision)
-		bs.MegabyteCosts[id] = percentMeg.Mul(bilMegabytes)
+		bs.MegabytePercent[id] := subMeg.DivRound(totalMeg, DecimalPrecision)
+		bs.MegabyteCosts[id] = bs.MegabytePercent[id].Mul(bilMegabytes)
 		// It's possible for a device to still be on the bill, but not show any usage data
 		if value, exists := meg[id]; exists {
 			bs.MegabyteQty[id] = value
@@ -597,20 +611,43 @@ func generatePDF(bs billSplit, b bill, filePath string) (string, error) {
 	// heading: number, nickname?, min, msg, data (KB), min%, msg%, data%
 	// Then entries for each number
 	// then entry for "Total" under nickname, and rest of sums
-	usageTable := func(split billSplit) {
-		usageTableHeading := []string{"Phone Number", "Nickname", "Minutes", "Messages", "Data (KB)", "Min%", "Msg%", "Data%"}
+	usageTable := func(b bill, bs billSplit) {
+		type usageTableVals struct {
+			owner      string
+			minutes    string
+			messages   string
+			data       string
+			percentMin string
+			percentMsg string
+			percentMeg string
+		}
+
+		usageTableHeading := []string{"Phone Number", "Owner", "Minutes", "Messages", "Data (KB)", "Min%", "Msg%", "Data%"}
 		w := []float64{40.0, 30.0, 25.0, 25.0, 25.0, 15.0, 15.0, 15.0}
 		pdf.SetXY(10, pdf.GetY()+5)
 
-		for j, str := range usageTableHeading {
-			pdf.CellFormat(w[j], 7, str, "1", 0, "C", false, 0, "")
+		// Print heading
+		for i, str := range usageTableHeading {
+			pdf.CellFormat(w[i], 7, str, "1", 0, "C", false, 0, "")
 		}
 		pdf.Ln(-1)
 
-		fmt.Println(split)
+		fmt.Println(bs)
 		fmt.Println("just printed split to get it to shut up")
+
+		// Prep data
+		values := make(map[string]usageTableVals)
+
+		for _, val := range b.DeviceIds {
+			values[val] = usageTableVals{
+				"fart",
+				strconv.Itoa(bs.MinuteQty[val]),
+				strconv.Itoa(bs.MessageQty[val]),
+				strconv.Itoa(bs.MegabyteQty[val]),
+			}
+		}
 	}
-	usageTable(bs)
+	usageTable(b, bs)
 
 	// Table 2: Weighted costs - 3 rows
 	// heading: Weighted Costs: Minutes, Messages, Data
