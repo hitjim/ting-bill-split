@@ -19,32 +19,42 @@ import (
 )
 
 type bill struct {
+	Description    string   `toml:"description"`
+	DeviceIds      []string `toml:"deviceIds"`
+	ShortStrawID   string   `toml:"shortStrawId"`
+	Total          float64  `toml:"total"`
+	Devices        float64  `toml:"devices"`
 	Minutes        float64  `toml:"minutes"`
 	Messages       float64  `toml:"messages"`
 	Megabytes      float64  `toml:"megabytes"`
-	Devices        float64  `toml:"devices"`
 	ExtraMinutes   float64  `toml:"extraMinutes"`
 	ExtraMessages  float64  `toml:"extraMessages"`
 	ExtraMegabytes float64  `toml:"extraMegabytes"`
 	Fees           float64  `toml:"fees"`
-	DeviceIds      []string `toml:"deviceIds"`
-	ShortStrawID   string   `toml:"shortStrawId"`
-	Total          float64  `toml:"total"`
-	Description    string   `toml:"description"`
 }
 
 // Used to contain all subtotals for a monthly bill.
 // MinuteCosts, MessageCosts, MegabyteCosts are maps of decimal.Decimal totals.
 // They are split by bill.DeviceIds and calculated by usage in parseMaps.
 // SharedCosts reflect the rest of the items not based on usage, which get split evenly across all deviceIds
+// TODO: finish these comments
 type billSplit struct {
-	MinuteCosts   map[string]decimal.Decimal
-	MinuteQty     map[string]int
-	MessageCosts  map[string]decimal.Decimal
-	MessageQty    map[string]int
-	MegabyteCosts map[string]decimal.Decimal
-	MegabyteQty   map[string]int
-	SharedCosts   map[string]decimal.Decimal
+	MinuteCosts     map[string]decimal.Decimal
+	MinuteQty       map[string]int
+	MinutePercent   map[string]decimal.Decimal
+	MessageCosts    map[string]decimal.Decimal
+	MessageQty      map[string]int
+	MessagePercent  map[string]decimal.Decimal
+	MegabyteCosts   map[string]decimal.Decimal
+	MegabyteQty     map[string]int
+	MegabytePercent map[string]decimal.Decimal
+	SharedCosts     map[string]decimal.Decimal
+}
+
+type totals struct {
+	TotalMinutes   int
+	TotalMessages  int
+	TotalMegabytes int
 }
 
 func parseMaps(min map[string]int, msg map[string]int, meg map[string]int, bil bill) (billSplit, error) {
@@ -52,14 +62,16 @@ func parseMaps(min map[string]int, msg map[string]int, meg map[string]int, bil b
 		make(map[string]decimal.Decimal),
 		make(map[string]int),
 		make(map[string]decimal.Decimal),
-		make(map[string]int),
 		make(map[string]decimal.Decimal),
 		make(map[string]int),
+		make(map[string]decimal.Decimal),
+		make(map[string]decimal.Decimal),
+		make(map[string]int),
+		make(map[string]decimal.Decimal),
 		make(map[string]decimal.Decimal),
 	}
 	var usedMin, usedMsg, usedMeg int
 	DecimalPrecision := int32(6)
-	RoundPrecision := int32(2)
 
 	bilMinutes := decimal.NewFromFloat(bil.Minutes + bil.ExtraMinutes)
 	bilMessages := decimal.NewFromFloat(bil.Messages + bil.ExtraMessages)
@@ -80,11 +92,14 @@ func parseMaps(min map[string]int, msg map[string]int, meg map[string]int, bil b
 		usedMeg += v
 	}
 
+	totalMin := decimal.New(int64(usedMin), DecimalPrecision)
+	totalMsg := decimal.New(int64(usedMsg), DecimalPrecision)
+	totalMeg := decimal.New(int64(usedMeg), DecimalPrecision)
+
 	for _, id := range bil.DeviceIds {
 		subMin := decimal.New(int64(min[id]), DecimalPrecision)
-		totalMin := decimal.New(int64(usedMin), DecimalPrecision)
-		percentMin := subMin.DivRound(totalMin, DecimalPrecision)
-		bs.MinuteCosts[id] = percentMin.Mul(bilMinutes).Round(RoundPrecision)
+		bs.MinutePercent[id] = subMin.Div(totalMin)
+		bs.MinuteCosts[id] = bs.MinutePercent[id].Mul(bilMinutes)
 		// It's possible for a device to still be on the bill, but not show any usage data
 		if value, exists := min[id]; exists {
 			bs.MinuteQty[id] = value
@@ -93,9 +108,8 @@ func parseMaps(min map[string]int, msg map[string]int, meg map[string]int, bil b
 		}
 
 		subMsg := decimal.New(int64(msg[id]), DecimalPrecision)
-		totalMsg := decimal.New(int64(usedMsg), DecimalPrecision)
-		percentMsg := subMsg.DivRound(totalMsg, DecimalPrecision)
-		bs.MessageCosts[id] = percentMsg.Mul(bilMessages).Round(RoundPrecision)
+		bs.MessagePercent[id] = subMsg.DivRound(totalMsg, DecimalPrecision)
+		bs.MessageCosts[id] = bs.MessagePercent[id].Mul(bilMessages)
 		// It's possible for a device to still be on the bill, but not show any usage data
 		if value, exists := msg[id]; exists {
 			bs.MessageQty[id] = value
@@ -104,9 +118,8 @@ func parseMaps(min map[string]int, msg map[string]int, meg map[string]int, bil b
 		}
 
 		subMeg := decimal.New(int64(meg[id]), DecimalPrecision)
-		totalMeg := decimal.New(int64(usedMeg), DecimalPrecision)
-		percentMeg := subMeg.DivRound(totalMeg, DecimalPrecision)
-		bs.MegabyteCosts[id] = percentMeg.Mul(bilMegabytes).Round(RoundPrecision)
+		bs.MegabytePercent[id] = subMeg.DivRound(totalMeg, DecimalPrecision)
+		bs.MegabyteCosts[id] = bs.MegabytePercent[id].Mul(bilMegabytes)
 		// It's possible for a device to still be on the bill, but not show any usage data
 		if value, exists := meg[id]; exists {
 			bs.MegabyteQty[id] = value
@@ -114,57 +127,55 @@ func parseMaps(min map[string]int, msg map[string]int, meg map[string]int, bil b
 			bs.MegabyteQty[id] = 0
 		}
 
-		bs.SharedCosts[id] = delta.DivRound(deviceQty, RoundPrecision)
+		bs.SharedCosts[id] = delta.DivRound(deviceQty, DecimalPrecision)
 	}
 
-	minSubSum := decimal.New(0, RoundPrecision)
+	minSubSum := decimal.New(0, DecimalPrecision)
 	for _, sub := range bs.MinuteCosts {
 		minSubSum = minSubSum.Add(sub)
 	}
 
 	minSubExtra := bilMinutes.Sub(minSubSum)
-	if minSubExtra.GreaterThan(decimal.New(0, RoundPrecision)) {
+	if minSubExtra.GreaterThan(decimal.New(0, DecimalPrecision)) {
 		fmt.Printf("Remainder minutes cost of $%s to deviceId %s\n", minSubExtra.String(), bil.ShortStrawID)
 		bs.MinuteCosts[bil.ShortStrawID].Add(minSubExtra)
 	} else {
 		fmt.Println("There was no remainder cost when splitting minutes.")
 	}
 
-	msgSubSum := decimal.New(0, RoundPrecision)
+	msgSubSum := decimal.New(0, DecimalPrecision)
 	for _, sub := range bs.MessageCosts {
 		msgSubSum = msgSubSum.Add(sub)
 	}
 
 	msgSubExtra := bilMessages.Sub(msgSubSum)
-	if msgSubExtra.GreaterThan(decimal.New(0, RoundPrecision)) {
+	if msgSubExtra.GreaterThan(decimal.New(0, DecimalPrecision)) {
 		fmt.Printf("Remainder messages cost of $%s to deviceId %s\n", msgSubExtra.String(), bil.ShortStrawID)
 		bs.MessageCosts[bil.ShortStrawID].Add(msgSubExtra)
 	} else {
 		fmt.Println("There was no remainder cost when splitting messages.")
 	}
 
-	megSubSum := decimal.New(0, RoundPrecision)
+	megSubSum := decimal.New(0, DecimalPrecision)
 	for _, sub := range bs.MegabyteCosts {
 		megSubSum = megSubSum.Add(sub)
 	}
 
 	megSubExtra := bilMessages.Sub(megSubSum)
-	if megSubExtra.GreaterThan(decimal.New(0, RoundPrecision)) {
+	if megSubExtra.GreaterThan(decimal.New(0, DecimalPrecision)) {
 		fmt.Printf("Remainder megabytes cost of $%s to deviceId %s\n", megSubExtra.String(), bil.ShortStrawID)
 		bs.MegabyteCosts[bil.ShortStrawID].Add(megSubExtra)
 	} else {
 		fmt.Println("There was no remainder cost when splitting megabytes.")
 	}
 
-	deltaSubSum := decimal.New(0, RoundPrecision)
-	fmt.Println("bs.SharedCosts is")
-	fmt.Println(bs.SharedCosts)
+	deltaSubSum := decimal.New(0, DecimalPrecision)
 	for _, sub := range bs.SharedCosts {
 		deltaSubSum = deltaSubSum.Add(sub)
 	}
 
 	deltaSubExtra := delta.Sub(deltaSubSum)
-	if deltaSubExtra.GreaterThan(decimal.New(0, RoundPrecision)) {
+	if deltaSubExtra.GreaterThan(decimal.New(0, DecimalPrecision)) {
 		fmt.Printf("Remainder delta cost of $%s added to deviceId %s\n", deltaSubExtra.String(), bil.ShortStrawID)
 		bs.SharedCosts[bil.ShortStrawID] = bs.SharedCosts[bil.ShortStrawID].Add(deltaSubExtra)
 	} else {
@@ -361,15 +372,15 @@ func createNewBillingDir(args []string) {
 		if _, err := os.Stat(newDirName); os.IsNotExist(err) {
 			fmt.Println("Creating a directory for a new billing period.")
 			os.MkdirAll(newDirName, os.ModeDir)
-			createBillsFile(newDirName)
-			fmt.Printf("\n1. Enter values for the bills.toml file in new directory `%s`\n", newDirName)
+			createBillFile(newDirName)
+			fmt.Printf("\n1. Enter values for the bill.toml file in new directory `%s`\n", newDirName)
 			fmt.Println("2. Add csv files for minutes, message, megabytes in the new directory")
 			fmt.Printf("3. run `ting-bill-split %s`\n", newDirName)
 		}
 	}
 }
 
-func createBillsFile(path string) {
+func createBillFile(path string) {
 	path += "/bill.toml"
 	f, err := os.Create(path)
 
@@ -377,22 +388,22 @@ func createBillsFile(path string) {
 		panic(err)
 	}
 
-	newBills := bill{
+	newBill := bill{
+		Description:    "Ting Bill YYYY-MM-DD",
+		DeviceIds:      []string{"1112223333", "2229998888", "etc"},
+		ShortStrawID:   "1112223333",
+		Total:          0.00,
+		Devices:        0.00,
 		Minutes:        0.00,
 		Messages:       0.00,
 		Megabytes:      0.00,
-		Devices:        0.00,
 		ExtraMinutes:   0.00,
 		ExtraMessages:  0.00,
 		ExtraMegabytes: 0.00,
 		Fees:           0.00,
-		DeviceIds:      []string{"1112223333", "2229998888", "etc"},
-		ShortStrawID:   "1112223333",
-		Total:          0.00,
-		Description:    "Ting Bill YYYY-MM-DD",
 	}
 
-	if err := toml.NewEncoder(f).Encode(newBills); err != nil {
+	if err := toml.NewEncoder(f).Encode(newBill); err != nil {
 		log.Fatalf("Error encoding TOML: %s", err)
 	}
 }
@@ -461,7 +472,7 @@ func parseDir(path string) {
 		fmt.Println("Unable to open necessary files.")
 
 		if billFile == nil {
-			fmt.Println("Bills file not found.")
+			fmt.Println("Bill file not found.")
 			return
 		}
 
@@ -491,19 +502,16 @@ func parseDir(path string) {
 		if err != nil {
 			log.Fatal(err)
 		}
-		fmt.Println(minMap)
 
 		msgMap, err := parseMessages(msgFile)
 		if err != nil {
 			log.Fatal(err)
 		}
-		fmt.Println(msgMap)
 
 		megMap, err := parseMegabytes(megFile)
 		if err != nil {
 			log.Fatal(err)
 		}
-		fmt.Println(megMap)
 
 		//TODO take in each map and return a billSplit
 		split, err := parseMaps(minMap, msgMap, megMap, billData)
@@ -524,72 +532,345 @@ func parseDir(path string) {
 
 func generatePDF(bs billSplit, b bill, filePath string) (string, error) {
 	fmt.Printf("Generating invoice %s\n\n", filePath)
-	header := []string{"header1", "header2", "header3", "header4"}
-	type country struct {
-		nameStr, capitalStr, smellStr, birdStr string
+	RoundPrecision := int32(2)
+
+	pdf := gofpdf.New("P", "mm", "A4", "")
+	pdf.AddPage()
+	pdf.SetFont("Arial", "B", 10)
+	pdf.SetXY(10, 20)
+
+	// Table 0: Heading - 7 rows
+	// heading: Invoice filename w/date, Device qty, Bill Total, Split Total
+	//   (for comparison), Usage subtotal, Devices Subtotal, Tax+Reg subtotal"
+	headingTable := func(b bill, bs billSplit) {
+		pageHeading := []string{"Invoice with date", "Devices Qty", "$Total", "$Calc", "$Usage", "$Devices", "$Tax+Reg"}
+		w := []float64{40.0, 25.0, 20.0, 20.0, 20.0, 20.0, 20.0}
+
+		// Print heading
+		for j, str := range pageHeading {
+			pdf.CellFormat(w[j], 7, str, "1", 0, "C", false, 0, "")
+		}
+		pdf.Ln(-1)
+
+		// Prep data
+		minCosts := decimal.New(0, 1)
+		msgCosts := decimal.New(0, 1)
+		megCosts := decimal.New(0, 1)
+		shrCosts := decimal.New(0, 1)
+
+		for _, v := range bs.MinuteCosts {
+			minCosts = minCosts.Add(v)
+		}
+
+		for _, v := range bs.MessageCosts {
+			msgCosts = msgCosts.Add(v)
+		}
+		for _, v := range bs.MegabyteCosts {
+			megCosts = megCosts.Add(v)
+		}
+		for _, v := range bs.SharedCosts {
+			shrCosts = shrCosts.Add(v)
+		}
+
+		calcCost := decimal.Sum(minCosts, msgCosts, megCosts, shrCosts).Round(RoundPrecision)
+		usgCost := decimal.Sum(minCosts, msgCosts, megCosts).Round(RoundPrecision)
+
+		values := []string{
+			b.Description,
+			strconv.Itoa(len(b.DeviceIds)),
+			strconv.FormatFloat(b.Total, 'f', 2, 64),
+			calcCost.StringFixed(2),
+			usgCost.StringFixed(2),
+			strconv.FormatFloat(b.Devices, 'f', 2, 64),
+			strconv.FormatFloat(b.Fees, 'f', 2, 64),
+		}
+
+		pdf.SetX(10)
+
+		// Print data
+		for i, str := range values {
+			pdf.CellFormat(w[i], 7, str, "1", 0, "C", false, 0, "")
+		}
+		pdf.Ln(-1)
 	}
+	headingTable(b, bs)
 
-	countryList := []country{
-		{"country1", "capital1", "smell1", "bird1"},
-		{"country2", "capital2", "smell2", "bird2"},
-		{"c3", "cap2", "sm2", "brd2"},
-		{"Jupiter", "Mars", "farts", "toots"},
-	}
-
-	// Top Heading: bill title with invoice date; Device qty; Bill total; split total, Usage subtotal $, Devices subtotal $, Tax+reg subtotal
-
-	// Table 1: Usage
+	// Table 1: Usage - 8 rows
 	// heading: number, nickname?, min, msg, data (KB), min%, msg%, data%
 	// Then entries for each number
 	// then entry for "Total" under nickname, and rest of sums
+	usageTable := func(b bill, bs billSplit) {
+		type usageTableVals struct {
+			owner      string
+			minutes    string
+			messages   string
+			data       string
+			percentMin string
+			percentMsg string
+			percentMeg string
+		}
 
-	// Table 2: Weighted costs
+		usageTableHeading := []string{"Phone Number", "Owner", "Minutes", "Messages", "Data (KB)", "Min%", "Msg%", "Data%"}
+		w := []float64{40.0, 30.0, 25.0, 25.0, 25.0, 15.0, 15.0, 15.0}
+		pdf.SetXY(10, pdf.GetY()+5)
+
+		// Print heading
+		for i, str := range usageTableHeading {
+			pdf.CellFormat(w[i], 7, str, "1", 0, "C", false, 0, "")
+		}
+		pdf.Ln(-1)
+
+		// Prep data
+		values := make(map[string]usageTableVals)
+
+		for _, id := range b.DeviceIds {
+			values[id] = usageTableVals{
+				"fart",
+				strconv.Itoa(bs.MinuteQty[id]),
+				strconv.Itoa(bs.MessageQty[id]),
+				strconv.Itoa(bs.MegabyteQty[id]),
+				bs.MinutePercent[id].StringFixed(RoundPrecision),
+				bs.MessagePercent[id].StringFixed(RoundPrecision),
+				bs.MegabytePercent[id].StringFixed(RoundPrecision),
+			}
+		}
+
+		// TODO: turn this into some kind of getMapKeys if it gets too crazy
+		ids := make([]string, len(values))
+		i := 0
+		for k := range values {
+			ids[i] = k
+			i++
+		}
+
+		// Print data
+		pdf.SetXY(10, pdf.GetY())
+		var wi int
+		valuesBound := len(values) - 1
+
+		for i, id := range ids {
+			wi = 0
+			rowVals := values[id]
+
+			pdf.CellFormat(w[wi], 7, id, "1", 0, "C", false, 0, "")
+			wi++
+			pdf.CellFormat(w[wi], 7, rowVals.owner, "1", 0, "C", false, 0, "")
+			wi++
+			pdf.CellFormat(w[wi], 7, rowVals.minutes, "1", 0, "R", false, 0, "")
+			wi++
+			pdf.CellFormat(w[wi], 7, rowVals.messages, "1", 0, "R", false, 0, "")
+			wi++
+			pdf.CellFormat(w[wi], 7, rowVals.data, "1", 0, "R", false, 0, "")
+			wi++
+			pdf.CellFormat(w[wi], 7, rowVals.percentMin, "1", 0, "C", false, 0, "")
+			wi++
+			pdf.CellFormat(w[wi], 7, rowVals.percentMsg, "1", 0, "C", false, 0, "")
+			wi++
+			pdf.CellFormat(w[wi], 7, rowVals.percentMeg, "1", 0, "C", false, 0, "")
+			if i < valuesBound {
+				pdf.SetXY(10, pdf.GetY()+7)
+			}
+		}
+		pdf.Ln(-1)
+	}
+	usageTable(b, bs)
+
+	// Table 2: Weighted costs - 3 rows
 	// heading: Weighted Costs: Minutes, Messages, Data
 	// Base: $x, $y, $z
 	// Extra: etc
 	// Total: etc
-
-	// Table 3: Shared costs
-	// heading: Type, Amount
-
-	// Table 4: Costs split
-	// heading: number, Nickname, Min, Msg, Data, Shared, Total
-	// entry for each number
-
-	pdf := gofpdf.New("P", "mm", "A4", "")
-	pdf.AddPage()
-	pdf.SetFont("Arial", "B", 16)
-	pdf.Cell(40, 10, b.Description)
-
-	improvedTable := func() {
-		// Column widths
-		w := []float64{40.0, 35.0, 40.0, 45.0}
-		wSum := 0.0
-		for _, v := range w {
-			wSum += v
+	weightedTable := func(b bill) {
+		type weightedTableVals struct {
+			name     string
+			minutes  string
+			messages string
+			data     string
 		}
-		left := (210 - wSum) / 2
-		// 	Header
-		pdf.SetY(20)
-		pdf.SetX(left)
-		for j, str := range header {
-			pdf.CellFormat(w[j], 7, str, "1", 0, "C", false, 0, "")
+
+		wtheading := []string{"Cost Type", "Minutes", "Messages", "Data"}
+		pdf.SetXY(10, pdf.GetY()+5)
+
+		// Print heading
+		for _, str := range wtheading {
+			pdf.CellFormat(25.0, 7, str, "1", 0, "C", false, 0, "")
 		}
 		pdf.Ln(-1)
-		// Data
-		for _, c := range countryList {
-			pdf.SetX(left)
-			pdf.CellFormat(w[0], 6, c.nameStr, "LR", 0, "", false, 0, "")
-			pdf.CellFormat(w[1], 6, c.capitalStr, "LR", 0, "", false, 0, "")
-			pdf.CellFormat(w[2], 6, c.smellStr, "LR", 0, "R", false, 0, "")
-			pdf.CellFormat(w[3], 6, c.birdStr, "LR", 0, "R", false, 0, "")
-			pdf.Ln(-1)
-		}
-		pdf.SetX(left)
-		pdf.CellFormat(wSum, 0, "", "T", 0, "", false, 0, "")
-	}
 
-	improvedTable()
+		// Prep data
+		totalMin := b.Minutes + b.ExtraMinutes
+		totalMsg := b.Messages + b.ExtraMessages
+		totalMeg := b.Megabytes + b.ExtraMegabytes
+		wTotal := strconv.FormatFloat(totalMin+totalMsg+totalMeg, 'f', 2, 64)
+
+		values := []weightedTableVals{
+			{
+				name:     "Base",
+				minutes:  strconv.FormatFloat(b.Minutes, 'f', 2, 64),
+				messages: strconv.FormatFloat(b.Messages, 'f', 2, 64),
+				data:     strconv.FormatFloat(b.Megabytes, 'f', 2, 64),
+			},
+			{
+				name:     "Extra",
+				minutes:  strconv.FormatFloat(b.ExtraMinutes, 'f', 2, 64),
+				messages: strconv.FormatFloat(b.ExtraMessages, 'f', 2, 64),
+				data:     strconv.FormatFloat(b.ExtraMegabytes, 'f', 2, 64),
+			},
+			{
+				name:     "Total",
+				minutes:  strconv.FormatFloat(totalMin, 'f', 2, 64),
+				messages: strconv.FormatFloat(totalMsg, 'f', 2, 64),
+				data:     strconv.FormatFloat(totalMeg, 'f', 2, 64),
+			},
+		}
+
+		// Print data
+		pdf.SetXY(10, pdf.GetY())
+		valuesBound := len(values) - 1
+
+		for i, rowVals := range values {
+			pdf.CellFormat(25.0, 7, rowVals.name, "1", 0, "C", false, 0, "")
+			pdf.CellFormat(25.0, 7, rowVals.minutes, "1", 0, "C", false, 0, "")
+			pdf.CellFormat(25.0, 7, rowVals.messages, "1", 0, "C", false, 0, "")
+			pdf.CellFormat(25.0, 7, rowVals.data, "1", 0, "C", false, 0, "")
+
+			if i < valuesBound {
+				pdf.SetXY(10, pdf.GetY()+7)
+			} else {
+				pdf.CellFormat(25.0, 7, wTotal, "1", 0, "C", false, 0, "")
+			}
+		}
+		pdf.Ln(-1)
+	}
+	weightedTable(b)
+
+	// Table 3: Shared costs - 2
+	// TODO LATER - handle all the tax and reg costs in bill file?
+	// heading: Type, Amount
+	sharedTable := func(b bill) {
+		type sharedTableVals struct {
+			costType string
+			amount   string
+		}
+
+		stheading := []string{"Type", "Amount"}
+		pdf.SetXY(10, pdf.GetY()+5)
+
+		// Print heading
+		for _, str := range stheading {
+			pdf.CellFormat(25.0, 7, str, "1", 0, "C", false, 0, "")
+		}
+		pdf.Ln(-1)
+
+		// Prep data
+		sTotal := strconv.FormatFloat(b.Devices+b.Fees, 'f', 2, 64)
+
+		values := []sharedTableVals{
+			{
+				costType: "Devices",
+				amount:   strconv.FormatFloat(b.Devices, 'f', 2, 64),
+			},
+			{
+				costType: "Tax & Reg",
+				amount:   strconv.FormatFloat(b.Fees, 'f', 2, 64),
+			},
+			{
+				costType: "Total",
+				amount:   sTotal,
+			},
+		}
+
+		// Print data
+		pdf.SetXY(10, pdf.GetY())
+		valuesBound := len(values) - 1
+
+		for i, rowVals := range values {
+			pdf.CellFormat(25.0, 7, rowVals.costType, "1", 0, "L", false, 0, "")
+			pdf.CellFormat(25.0, 7, rowVals.amount, "1", 0, "R", false, 0, "")
+
+			if i < valuesBound {
+				pdf.SetXY(10, pdf.GetY()+7)
+			}
+		}
+		pdf.Ln(-1)
+	}
+	sharedTable(b)
+
+	// Table 4: Costs split - 7
+	// heading: number, Nickname, Min, Msg, Data, Shared, Total
+	// entry for each number
+	splitTable := func(bs billSplit) {
+		type splitTableVals struct {
+			owner    string
+			minutes  string
+			messages string
+			data     string
+			shared   string
+			total    string
+		}
+
+		splitTableHeading := []string{"Phone Number", "Owner", "$Min", "$Msg", "$Data", "$Shared", "$Total"}
+		w := []float64{35.0, 30.0, 25.0, 25.0, 25.0, 25.0, 25.0}
+		pdf.SetXY(10, pdf.GetY()+5)
+
+		// Print heading
+		for i, str := range splitTableHeading {
+			pdf.CellFormat(w[i], 7, str, "1", 0, "C", false, 0, "")
+		}
+		pdf.Ln(-1)
+
+		// Prep data
+		values := make(map[string]splitTableVals)
+
+		for _, id := range b.DeviceIds {
+			userTotal := decimal.Sum(bs.MinuteCosts[id], bs.MessageCosts[id], bs.MegabyteCosts[id], bs.SharedCosts[id])
+			values[id] = splitTableVals{
+				"fart",
+				bs.MinuteCosts[id].StringFixed(2),
+				bs.MessageCosts[id].StringFixed(2),
+				bs.MegabyteCosts[id].StringFixed(2),
+				bs.SharedCosts[id].StringFixed(2),
+				userTotal.StringFixed(2),
+			}
+		}
+
+		ids := make([]string, len(values))
+		i := 0
+		for k := range values {
+			ids[i] = k
+			i++
+		}
+
+		// Print data
+		pdf.SetXY(10, pdf.GetY())
+		var wi int
+		valuesBound := len(values) - 1
+
+		for i, id := range ids {
+			wi = 0
+			rowVals := values[id]
+
+			pdf.CellFormat(w[wi], 7, id, "1", 0, "C", false, 0, "")
+			wi++
+			pdf.CellFormat(w[wi], 7, rowVals.owner, "1", 0, "C", false, 0, "")
+			wi++
+			pdf.CellFormat(w[wi], 7, rowVals.minutes, "1", 0, "R", false, 0, "")
+			wi++
+			pdf.CellFormat(w[wi], 7, rowVals.messages, "1", 0, "R", false, 0, "")
+			wi++
+			pdf.CellFormat(w[wi], 7, rowVals.data, "1", 0, "R", false, 0, "")
+			wi++
+			pdf.CellFormat(w[wi], 7, rowVals.shared, "1", 0, "R", false, 0, "")
+			wi++
+			pdf.CellFormat(w[wi], 7, rowVals.total, "1", 0, "R", false, 0, "")
+			wi++
+			if i < valuesBound {
+				pdf.SetXY(10, pdf.GetY()+7)
+			}
+		}
+		pdf.Ln(-1)
+	}
+	splitTable(bs)
 
 	err := pdf.OutputFileAndClose(filePath)
 
@@ -626,7 +907,6 @@ func main() {
 			if len(args) > 1 {
 				targetDir = args[1]
 			}
-			fmt.Printf("\n targetDir is %s\n", targetDir)
 			parseDir(targetDir)
 			// TODO - make parseDir return a split, since non-dir parsing uses a split
 			//   then handle all actions after the if/else
@@ -665,10 +945,6 @@ func main() {
 			log.Fatal(err)
 		}
 
-		// TODO remove this once we do something useful with it.
-		fmt.Println("billData ... something something ... *wanders off*")
-		fmt.Println(billData)
-
 		minFile, err := os.Open(*minPtr)
 		if err != nil {
 			log.Fatal(err)
@@ -688,19 +964,16 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		fmt.Println(minMap)
 
 		msgMap, err := parseMessages(msgFile)
 		if err != nil {
 			log.Fatal(err)
 		}
-		fmt.Println(msgMap)
 
 		megMap, err := parseMegabytes(megFile)
 		if err != nil {
 			log.Fatal(err)
 		}
-		fmt.Println(megMap)
 
 		//TODO take in each map and return a billSplit
 		split, err := parseMaps(minMap, msgMap, megMap, billData)

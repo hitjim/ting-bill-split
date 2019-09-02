@@ -1,6 +1,12 @@
 # ting-bill-split directories
 invoices/
 
+# binaries
+ting-bill-split
+
+# Handy spot to try with real usage files
+real-bills/
+
 # Project-specific binary files
 **/*.pdf
 
@@ -30,4 +36,5 @@ _testmain.go
 *.prof
 
 # Editor noise
-*.swp
+**.swp
+**.code-workspace
