@@ -534,7 +534,6 @@ func generatePDF(bs billSplit, b bill, filePath string) (string, error) {
 	fmt.Printf("Generating invoice %s\n\n", filePath)
 	RoundPrecision := int32(2)
 
-	// weightedTableHeading := []string{"Cost Type", "Minutes", "Messages", "Data"}
 	// sharedTableHeading := []string{"Cost Type", "Amount"}
 	// costsSplitHeading := []string{"Phone Number", "Nickname", "$Min", "$Msg", "$Data"}
 
@@ -647,13 +646,15 @@ func generatePDF(bs billSplit, b bill, filePath string) (string, error) {
 			i++
 		}
 
+		// Print data
 		pdf.SetXY(10, pdf.GetY())
-
-		//Print data
 		var wi int
-		for _, id := range ids {
+		valuesBound := len(values) - 1
+
+		for i, id := range ids {
 			wi = 0
 			rowVals := values[id]
+
 			pdf.CellFormat(w[wi], 7, id, "1", 0, "C", false, 0, "")
 			wi++
 			pdf.CellFormat(w[wi], 7, rowVals.owner, "1", 0, "C", false, 0, "")
@@ -669,7 +670,9 @@ func generatePDF(bs billSplit, b bill, filePath string) (string, error) {
 			pdf.CellFormat(w[wi], 7, rowVals.percentMsg, "1", 0, "C", false, 0, "")
 			wi++
 			pdf.CellFormat(w[wi], 7, rowVals.percentMeg, "1", 0, "C", false, 0, "")
-			pdf.SetXY(10, pdf.GetY()+7)
+			if i < valuesBound {
+				pdf.SetXY(10, pdf.GetY()+7)
+			}
 		}
 		pdf.Ln(-1)
 	}
@@ -680,6 +683,65 @@ func generatePDF(bs billSplit, b bill, filePath string) (string, error) {
 	// Base: $x, $y, $z
 	// Extra: etc
 	// Total: etc
+	weightedTable := func(b bill) {
+		type weightedTableVals struct {
+			name     string
+			minutes  string
+			messages string
+			data     string
+		}
+
+		wtheading := []string{"Cost Type", "Minutes", "Messages", "Data"}
+		pdf.SetXY(10, pdf.GetY()+5)
+
+		// Print heading
+		for _, str := range wtheading {
+			pdf.CellFormat(25.0, 7, str, "1", 0, "C", false, 0, "")
+		}
+		pdf.Ln(-1)
+
+		// Prep data
+		totalMin := b.Minutes + b.ExtraMinutes
+		totalMsg := b.Messages + b.ExtraMessages
+		totalMeg := b.Megabytes + b.ExtraMegabytes
+
+		values := []weightedTableVals{
+			{
+				name:     "Base",
+				minutes:  strconv.FormatFloat(b.Minutes, 'f', 2, 64),
+				messages: strconv.FormatFloat(b.Messages, 'f', 2, 64),
+				data:     strconv.FormatFloat(b.Megabytes, 'f', 2, 64),
+			},
+			{
+				name:     "Extra",
+				minutes:  strconv.FormatFloat(b.ExtraMinutes, 'f', 2, 64),
+				messages: strconv.FormatFloat(b.ExtraMessages, 'f', 2, 64),
+				data:     strconv.FormatFloat(b.ExtraMegabytes, 'f', 2, 64),
+			},
+			{
+				name:     "Total",
+				minutes:  strconv.FormatFloat(totalMin, 'f', 2, 64),
+				messages: strconv.FormatFloat(totalMsg, 'f', 2, 64),
+				data:     strconv.FormatFloat(totalMeg, 'f', 2, 64),
+			},
+		}
+
+		// Print data
+		pdf.SetXY(10, pdf.GetY())
+		valuesBound := len(values) - 1
+
+		for i, rowVals := range values {
+			pdf.CellFormat(25.0, 7, rowVals.name, "1", 0, "C", false, 0, "")
+			pdf.CellFormat(25.0, 7, rowVals.minutes, "1", 0, "C", false, 0, "")
+			pdf.CellFormat(25.0, 7, rowVals.messages, "1", 0, "C", false, 0, "")
+			pdf.CellFormat(25.0, 7, rowVals.data, "1", 0, "C", false, 0, "")
+
+			if i < valuesBound {
+				pdf.SetXY(10, pdf.GetY()+7)
+			}
+		}
+	}
+	weightedTable(b)
 
 	// Table 3: Shared costs - 2 rows
 	// heading: Type, Amount
