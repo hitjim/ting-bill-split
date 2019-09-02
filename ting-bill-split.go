@@ -534,7 +534,6 @@ func generatePDF(bs billSplit, b bill, filePath string) (string, error) {
 	fmt.Printf("Generating invoice %s\n\n", filePath)
 	RoundPrecision := int32(2)
 
-	// sharedTableHeading := []string{"Cost Type", "Amount"}
 	// costsSplitHeading := []string{"Phone Number", "Nickname", "$Min", "$Msg", "$Data"}
 
 	pdf := gofpdf.New("P", "mm", "A4", "")
@@ -743,43 +742,63 @@ func generatePDF(bs billSplit, b bill, filePath string) (string, error) {
 				pdf.CellFormat(25.0, 7, wTotal, "1", 0, "C", false, 0, "")
 			}
 		}
+		pdf.Ln(-1)
 	}
 	weightedTable(b)
 
-	// Table 3: Shared costs - 2 rows
+	// Table 3: Shared costs - 2
 	// heading: Type, Amount
+	sharedTable := func(b bill) {
+		type sharedTableVals struct {
+			costType string
+			amount   string
+		}
+
+		stheading := []string{"Type", "Amount"}
+		pdf.SetXY(10, pdf.GetY()+5)
+
+		// Print heading
+		for _, str := range stheading {
+			pdf.CellFormat(25.0, 7, str, "1", 0, "C", false, 0, "")
+		}
+		pdf.Ln(-1)
+
+		// Prep data
+		sTotal := strconv.FormatFloat(b.Devices+b.Fees, 'f', 2, 64)
+
+		values := []sharedTableVals{
+			{
+				costType: "Devices",
+				amount:   strconv.FormatFloat(b.Devices, 'f', 2, 64),
+			},
+			{
+				costType: "Tax & Reg",
+				amount:   strconv.FormatFloat(b.Fees, 'f', 2, 64),
+			},
+			{
+				costType: "Total",
+				amount:   sTotal,
+			},
+		}
+
+		// Print data
+		pdf.SetXY(10, pdf.GetY())
+		valuesBound := len(values) - 1
+
+		for i, rowVals := range values {
+			pdf.CellFormat(25.0, 7, rowVals.costType, "1", 0, "L", false, 0, "")
+			pdf.CellFormat(25.0, 7, rowVals.amount, "1", 0, "R", false, 0, "")
+
+			if i < valuesBound {
+				pdf.SetXY(10, pdf.GetY()+7)
+			}
+		}
+	}
+	sharedTable(b)
 
 	// Table 4: Costs split - 7
 	// heading: number, Nickname, Min, Msg, Data, Shared, Total
 	// entry for each number
-
-	// weightedTable := func(yPosition float64, cHeadings []string, bs billSplit) {
-	// 	// Column widths
-	// 	w := []float64{40.0, 35.0, 40.0, 45.0}
-	// 	wSum := 0.0
-	// 	for _, v := range w {
-	// 		wSum += v
-	// 	}
-	// 	left := (210 - wSum) / 2
-	// 	// Header
-	// 	pdf.SetY(yPosition)
-	// 	pdf.SetX(left)
-	// 	for j, str := range header {
-	// 		pdf.CellFormat(w[j], 7, str, "1", 0, "C", false, 0, "")
-	// 	}
-	// 	pdf.Ln(-1)
-	// 	// Data
-	// 	for _, c := range countryList {
-	// 		pdf.SetX(left)
-	// 		pdf.CellFormat(w[0], 6, c.nameStr, "LR", 0, "", false, 0, "")
-	// 		pdf.CellFormat(w[1], 6, c.capitalStr, "LR", 0, "", false, 0, "")
-	// 		pdf.CellFormat(w[2], 6, c.smellStr, "LR", 0, "R", false, 0, "")
-	// 		pdf.CellFormat(w[3], 6, c.birdStr, "LR", 0, "R", false, 0, "")
-	// 		pdf.Ln(-1)
-	// 	}
-	// 	pdf.SetX(left)
-	// 	pdf.CellFormat(wSum, 0, "", "T", 0, "", false, 0, "")
-	// }
 
 	err := pdf.OutputFileAndClose(filePath)
 
