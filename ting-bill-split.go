@@ -704,6 +704,7 @@ func generatePDF(bs billSplit, b bill, filePath string) (string, error) {
 		totalMin := b.Minutes + b.ExtraMinutes
 		totalMsg := b.Messages + b.ExtraMessages
 		totalMeg := b.Megabytes + b.ExtraMegabytes
+		wTotal := strconv.FormatFloat(totalMin+totalMsg+totalMeg, 'f', 2, 64)
 
 		values := []weightedTableVals{
 			{
@@ -738,6 +739,8 @@ func generatePDF(bs billSplit, b bill, filePath string) (string, error) {
 
 			if i < valuesBound {
 				pdf.SetXY(10, pdf.GetY()+7)
+			} else {
+				pdf.CellFormat(25.0, 7, wTotal, "1", 0, "C", false, 0, "")
 			}
 		}
 	}
