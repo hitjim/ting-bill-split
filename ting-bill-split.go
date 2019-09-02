@@ -534,8 +534,6 @@ func generatePDF(bs billSplit, b bill, filePath string) (string, error) {
 	fmt.Printf("Generating invoice %s\n\n", filePath)
 	RoundPrecision := int32(2)
 
-	// costsSplitHeading := []string{"Phone Number", "Nickname", "$Min", "$Msg", "$Data"}
-
 	pdf := gofpdf.New("P", "mm", "A4", "")
 	pdf.AddPage()
 	pdf.SetFont("Arial", "B", 10)
@@ -747,6 +745,7 @@ func generatePDF(bs billSplit, b bill, filePath string) (string, error) {
 	weightedTable(b)
 
 	// Table 3: Shared costs - 2
+	// TODO LATER - handle all the tax and reg costs in bill file?
 	// heading: Type, Amount
 	sharedTable := func(b bill) {
 		type sharedTableVals struct {
@@ -793,12 +792,37 @@ func generatePDF(bs billSplit, b bill, filePath string) (string, error) {
 				pdf.SetXY(10, pdf.GetY()+7)
 			}
 		}
+		pdf.Ln(-1)
 	}
 	sharedTable(b)
 
 	// Table 4: Costs split - 7
 	// heading: number, Nickname, Min, Msg, Data, Shared, Total
 	// entry for each number
+	splitTable := func(bs billSplit) {
+		type splitTableVals struct {
+			number   string
+			nickname string
+			minutes  string
+			messages string
+			data     string
+			shared   string
+			total    string
+		}
+
+		splitTableHeading := []string{"Phone Number", "Owner", "$Min", "$Msg", "$Data", "$Shared", "$Total"}
+		w := []float64{35.0, 30.0, 25.0, 25.0, 25.0, 25.0, 25.0}
+		pdf.SetXY(10, pdf.GetY()+5)
+
+		// Print heading
+		for i, str := range splitTableHeading {
+			pdf.CellFormat(w[i], 7, str, "1", 0, "C", false, 0, "")
+		}
+		pdf.Ln(-1)
+
+		// Prep data
+	}
+	splitTable(bs)
 
 	err := pdf.OutputFileAndClose(filePath)
 
