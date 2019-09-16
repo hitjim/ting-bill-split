@@ -375,7 +375,7 @@ func createNewBillingDir(args []string) {
 			createBillFile(newDirName)
 			fmt.Printf("\n1. Enter values for the bill.toml file in new directory `%s`\n", newDirName)
 			fmt.Println("2. Add csv files for minutes, message, megabytes in the new directory")
-			fmt.Printf("3. run `ting-bill-split %s`\n", newDirName)
+			fmt.Printf("3. run `ting-bill-split dir %s`\n", newDirName)
 		}
 	}
 }
@@ -429,6 +429,7 @@ func parseDir(path string) {
 	var megFile *os.File
 
 	files, err := ioutil.ReadDir(path)
+	fmt.Printf("Parsing path %v", path)
 
 	if err != nil {
 		log.Fatal(err)
@@ -441,6 +442,7 @@ func parseDir(path string) {
 
 		if billFile == nil && isFileMatch(file.Name(), "bill", "toml") {
 			billFile, err = os.Open(file.Name())
+			fmt.Println("billFile is %v", billFile)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -625,7 +627,7 @@ func generatePDF(bs billSplit, b bill, filePath string) (string, error) {
 
 		for _, id := range b.DeviceIds {
 			values[id] = usageTableVals{
-				"fart",
+				"TODO: Owner Name",
 				strconv.Itoa(bs.MinuteQty[id]),
 				strconv.Itoa(bs.MessageQty[id]),
 				strconv.Itoa(bs.MegabyteQty[id]),
