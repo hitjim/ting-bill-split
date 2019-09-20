@@ -883,8 +883,16 @@ func generatePDF(bs billSplit, b bill, filePath string) (string, error) {
 	return filePath, err
 }
 
+func printUsageHelp() {
+	fmt.Println("Use `ting-bill-split new` or `ting-bill-split new <billing-directory>` to create a new billing directory")
+	fmt.Println("\nUse `ting-bill-split dir <billing-directory>` to run on a directory containing a `bill.toml`, and CSV files for minutes, messages, and megabytes usage.")
+	fmt.Println("  Each of these files must contain their type somewhere in the filename - i.e. `YYYYMMDD-messages.csv` or `messages-potatosalad.csv` or whatever.")
+}
+
 func main() {
-	fmt.Printf("Ting Bill Splitter\n\n")
+	fmt.Printf("TING BILL SPLIT\n")
+	fmt.Printf("`help`: usage guide for running batch mode against a single directory (recommended)\n")
+	fmt.Printf("`-h`: usage guide for running with individual file flags\n\n")
 
 	billPtr := flag.String("bill", "", "filename for bill toml - ex: -bill=\"bill.toml\"")
 	minPtr := flag.String("minutes", "", "filename for minutes csv - ex: -minutes=\"minutes.csv\"")
@@ -896,7 +904,7 @@ func main() {
 	targetDir := "."
 
 	if len(args) > 0 {
-		fmt.Println("Running in batch mode")
+		fmt.Println("BATCH MODE")
 
 		command := args[0]
 
@@ -910,15 +918,12 @@ func main() {
 			parseDir(targetDir)
 			// TODO - make parseDir return a split, since non-dir parsing uses a split
 			//   then handle all actions after the if/else
+		case "help":
+			printUsageHelp()
 		default:
-			fmt.Println("Use `ting-bill-split new` or `new <billing-directory>` to create a new billing directory")
-			fmt.Println("Use `ting-bill-split dir <billing-directory>` to run on a directory containing a `bill.toml`, and CSV files for minutes, messages, and megabytes usage.")
-			fmt.Println("  Each of these files must contain their type somewhere in the filename - i.e. `YYYYMMDD-messages.csv` or `messages-potatosalad.csv` or whatever.")
-			fmt.Printf("\n... or `-h` for flag options")
+			fmt.Printf("\nInvalid arguments provided\n")
 		}
 	} else {
-		fmt.Println("Running with with individual file assignments")
-
 		badParam := false
 		paramMap := map[string]*string{
 			"bill":      billPtr,
@@ -927,59 +932,69 @@ func main() {
 			"megabytes": megPtr,
 		}
 
-		for k, v := range paramMap {
-			checkParam(k, v, &badParam)
+		flagUsed := false
+		for _, v := range paramMap {
+			if *v != "" {
+				flagUsed = true
+			}
 		}
 
-		if badParam {
-			os.Exit(1)
-		}
+		if flagUsed {
+			fmt.Println("RUNNING WITH INDIVIDUAL FILE FLAGS")
+			for k, v := range paramMap {
+				checkParam(k, v, &badParam)
+			}
 
-		billFile, err := os.Open(*billPtr)
-		if err != nil {
-			log.Fatal(err)
-		}
+			if badParam {
+				os.Exit(1)
+			}
 
-		billData, err := parseBill(billFile)
-		if err != nil {
-			log.Fatal(err)
-		}
+			billFile, err := os.Open(*billPtr)
+			if err != nil {
+				log.Fatal(err)
+			}
 
-		minFile, err := os.Open(*minPtr)
-		if err != nil {
-			log.Fatal(err)
-		}
+			billData, err := parseBill(billFile)
+			if err != nil {
+				log.Fatal(err)
+			}
 
-		msgFile, err := os.Open(*msgPtr)
-		if err != nil {
-			log.Fatal(err)
-		}
+			minFile, err := os.Open(*minPtr)
+			if err != nil {
+				log.Fatal(err)
+			}
 
-		megFile, err := os.Open(*megPtr)
-		if err != nil {
-			log.Fatal(err)
-		}
+			msgFile, err := os.Open(*msgPtr)
+			if err != nil {
+				log.Fatal(err)
+			}
 
-		minMap, err := parseMinutes(minFile)
-		if err != nil {
-			log.Fatal(err)
-		}
+			megFile, err := os.Open(*megPtr)
+			if err != nil {
+				log.Fatal(err)
+			}
 
-		msgMap, err := parseMessages(msgFile)
-		if err != nil {
-			log.Fatal(err)
-		}
+			minMap, err := parseMinutes(minFile)
+			if err != nil {
+				log.Fatal(err)
+			}
 
-		megMap, err := parseMegabytes(megFile)
-		if err != nil {
-			log.Fatal(err)
-		}
+			msgMap, err := parseMessages(msgFile)
+			if err != nil {
+				log.Fatal(err)
+			}
 
-		//TODO take in each map and return a billSplit
-		split, err := parseMaps(minMap, msgMap, megMap, billData)
-		if err != nil {
-			log.Fatal(err)
+			megMap, err := parseMegabytes(megFile)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			//TODO take in each map and return a billSplit
+			split, err := parseMaps(minMap, msgMap, megMap, billData)
+			if err != nil {
+				log.Fatal(err)
+			}
+			fmt.Println(split)
 		}
-		fmt.Println(split)
 	}
 }
