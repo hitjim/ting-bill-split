@@ -827,7 +827,7 @@ func generatePDF(bs billSplit, b bill, filePath string) (string, error) {
 		for _, id := range b.DeviceIds {
 			userTotal := decimal.Sum(bs.MinuteCosts[id], bs.MessageCosts[id], bs.MegabyteCosts[id], bs.SharedCosts[id])
 			values[id] = splitTableVals{
-				"fart",
+				"TODO: Owner",
 				bs.MinuteCosts[id].StringFixed(2),
 				bs.MessageCosts[id].StringFixed(2),
 				bs.MegabyteCosts[id].StringFixed(2),
