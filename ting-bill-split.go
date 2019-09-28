@@ -375,7 +375,7 @@ func createNewBillingDir(args []string) {
 			createBillFile(newDirName)
 			fmt.Printf("\n1. Enter values for the bill.toml file in new directory `%s`\n", newDirName)
 			fmt.Println("2. Add csv files for minutes, message, megabytes in the new directory")
-			fmt.Printf("3. run `ting-bill-split %s`\n", newDirName)
+			fmt.Printf("3. run `ting-bill-split dir %s`\n", newDirName)
 		}
 	}
 }
@@ -436,32 +436,33 @@ func parseDir(path string) {
 
 	for _, file := range files {
 		if file.IsDir() {
+			fmt.Println("file is a Dir")
 			continue
 		}
 
 		if billFile == nil && isFileMatch(file.Name(), "bill", "toml") {
-			billFile, err = os.Open(file.Name())
+			billFile, err = os.Open(filepath.Join(path, file.Name()))
 			if err != nil {
 				log.Fatal(err)
 			}
 		}
 
 		if minFile == nil && isFileMatch(file.Name(), "minutes", "csv") {
-			minFile, err = os.Open(file.Name())
+			minFile, err = os.Open(filepath.Join(path, file.Name()))
 			if err != nil {
 				log.Fatal(err)
 			}
 		}
 
 		if msgFile == nil && isFileMatch(file.Name(), "messages", "csv") {
-			msgFile, err = os.Open(file.Name())
+			msgFile, err = os.Open(filepath.Join(path, file.Name()))
 			if err != nil {
 				log.Fatal(err)
 			}
 		}
 
 		if megFile == nil && isFileMatch(file.Name(), "megabytes", "csv") {
-			megFile, err = os.Open(file.Name())
+			megFile, err = os.Open(filepath.Join(path, file.Name()))
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -518,20 +519,20 @@ func parseDir(path string) {
 		if err != nil {
 			log.Fatal(err)
 		}
-		fmt.Println(split)
 
 		pdfFilePath := filepath.Join(path, billData.Description+".pdf")
 
 		invoiceNames, err := generatePDF(split, billData, pdfFilePath)
 		if err != nil {
+			fmt.Println("Failed to generate invoice at path: %s\n", pdfFilePath)
 			log.Fatal(err)
 		}
-		fmt.Printf("Invoice generation complete: %s", invoiceNames)
+		fmt.Printf("Invoice generation complete: %s\n\n", invoiceNames)
 	}
 }
 
 func generatePDF(bs billSplit, b bill, filePath string) (string, error) {
-	fmt.Printf("Generating invoice %s\n\n", filePath)
+	fmt.Printf("\nGenerating invoice...\n")
 	RoundPrecision := int32(2)
 
 	pdf := gofpdf.New("P", "mm", "A4", "")
@@ -625,7 +626,7 @@ func generatePDF(bs billSplit, b bill, filePath string) (string, error) {
 
 		for _, id := range b.DeviceIds {
 			values[id] = usageTableVals{
-				"fart",
+				"TODO: Owner Name",
 				strconv.Itoa(bs.MinuteQty[id]),
 				strconv.Itoa(bs.MessageQty[id]),
 				strconv.Itoa(bs.MegabyteQty[id]),
@@ -825,7 +826,7 @@ func generatePDF(bs billSplit, b bill, filePath string) (string, error) {
 		for _, id := range b.DeviceIds {
 			userTotal := decimal.Sum(bs.MinuteCosts[id], bs.MessageCosts[id], bs.MegabyteCosts[id], bs.SharedCosts[id])
 			values[id] = splitTableVals{
-				"fart",
+				"TODO: Owner",
 				bs.MinuteCosts[id].StringFixed(2),
 				bs.MessageCosts[id].StringFixed(2),
 				bs.MegabyteCosts[id].StringFixed(2),
@@ -890,9 +891,8 @@ func printUsageHelp() {
 }
 
 func main() {
-	fmt.Printf("TING BILL SPLIT\n")
-	fmt.Printf("`help`: usage guide for running batch mode against a single directory (recommended)\n")
-	fmt.Printf("`-h`: usage guide for running with individual file flags\n\n")
+	fmt.Printf("\nTING BILL SPLIT\n")
+	fmt.Println("***************")
 
 	billPtr := flag.String("bill", "", "filename for bill toml - ex: -bill=\"bill.toml\"")
 	minPtr := flag.String("minutes", "", "filename for minutes csv - ex: -minutes=\"minutes.csv\"")
@@ -903,6 +903,11 @@ func main() {
 	args := flag.Args()
 	targetDir := "."
 
+	if len(args) == 0 {
+		fmt.Printf("`help`: usage guide for running batch mode against a single directory (recommended)\n")
+		fmt.Printf("`-h`: usage guide for running with individual file flags\n\n")
+	}
+
 	if len(args) > 0 {
 		fmt.Println("BATCH MODE")
 
@@ -912,12 +917,32 @@ func main() {
 		case "new":
 			createNewBillingDir(args)
 		case "dir":
+			workingDir, err := os.Getwd()
+			if err != nil {
+				fmt.Println("Could not get working directory")
+				log.Fatal(err)
+			}
+
 			if len(args) > 1 {
 				targetDir = args[1]
 			}
-			parseDir(targetDir)
-			// TODO - make parseDir return a split, since non-dir parsing uses a split
-			//   then handle all actions after the if/else
+
+			fullTargetDir := ""
+
+			// Handle absolute and relative paths, respectively
+			if filepath.IsAbs(targetDir) {
+				fullTargetDir = targetDir
+			} else {
+				fullTargetDir = filepath.Join(workingDir, targetDir)
+			}
+
+			if filepath.IsAbs(fullTargetDir) {
+				parseDir(fullTargetDir)
+				// TODO - make parseDir return a split, since non-dir parsing uses a split
+				//   then handle all actions after the if/else
+			} else {
+				fmt.Printf("Bill directory %v is invalid\n\n", fullTargetDir)
+			}
 		case "help":
 			printUsageHelp()
 		default:
