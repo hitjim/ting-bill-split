@@ -1,5 +1,5 @@
 # ting-bill-split
-Split your Ting bills based on usage for each line.
+Split your Ting bills based on usage for each device.
 
 ## Summary
 Ting provides cellular service in the United States using Sprint and T-Mobile networks - [Wikipedia](https://en.wikipedia.org/wiki/Ting_Inc.)
