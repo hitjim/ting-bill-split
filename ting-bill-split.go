@@ -18,6 +18,7 @@ import (
 	"github.com/shopspring/decimal"
 )
 
+// Used to represent the Ting-provided and user-provided info required to split bill costs
 type bill struct {
 	Description    string   `toml:"description"`
 	DeviceIds      []string `toml:"deviceIds"`
@@ -524,7 +525,7 @@ func parseDir(path string) {
 
 		invoiceNames, err := generatePDF(split, billData, pdfFilePath)
 		if err != nil {
-			fmt.Println("Failed to generate invoice at path: %s\n", pdfFilePath)
+			fmt.Printf("Failed to generate invoice at path: %v\n\n", pdfFilePath)
 			log.Fatal(err)
 		}
 		fmt.Printf("Invoice generation complete: %s\n\n", invoiceNames)
