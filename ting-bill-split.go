@@ -626,7 +626,7 @@ func generatePDF(bs billSplit, b bill, filePath string) (string, error) {
 
 		for _, id := range b.DeviceIds {
 			values[id] = usageTableVals{
-				"TODO: Owner Name",
+				"TODO: Owner",
 				strconv.Itoa(bs.MinuteQty[id]),
 				strconv.Itoa(bs.MessageQty[id]),
 				strconv.Itoa(bs.MegabyteQty[id]),
