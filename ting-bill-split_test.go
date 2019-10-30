@@ -226,18 +226,25 @@ extraMinutes = 1.00
 extraMessages = 2.00
 extraMegabytes = 3.00
 fees = 12.84
-deviceIds = [ "1112223333", "1112224444", "1112220000" ]
+[devices]
+1112223333 = "owner1"
+1112224444 = "owner2"
+1112220000 = "owner2"
 shortStrawId = "1112220000"`,
 			bill{
 				Minutes:        35.00,
 				Messages:       8.00,
 				Megabytes:      20.00,
-				Devices:        42.00,
+				DevicesCost:    42.00,
 				ExtraMinutes:   1.00,
 				ExtraMessages:  2.00,
 				ExtraMegabytes: 3.00,
 				Fees:           12.84,
-				DeviceIds:      []string{"1112223333", "1112224444", "1112220000"},
+				Devices:        {
+					"1112223333": "owner1",
+					"1112224444": "owner2",
+					"1112220000": "owner2",
+				},
 				ShortStrawID:   "1112220000",
 			},
 		},
@@ -250,18 +257,25 @@ extraMinutes = 1.00
 extraMessages = 2.00
 extraMegabytes = 3.00
 fees = 12.84
-deviceIds = [ "1112223333", "1112224444", "1112220000" ]
+[devices]
+1112223333 = "owner1"
+1112224444 = "owner2"
+1112220000 = "owner2"
 shortStrawId = "wrongnumber"`,
 			bill{
 				Minutes:        35.00,
 				Messages:       8.00,
 				Megabytes:      20.00,
-				Devices:        42.00,
+				DevicesCost:    42.00,
 				ExtraMinutes:   1.00,
 				ExtraMessages:  2.00,
 				ExtraMegabytes: 3.00,
 				Fees:           12.84,
-				DeviceIds:      []string{"1112223333", "1112224444", "1112220000"},
+				Devices:        {
+					"1112223333": "owner1",
+					"1112224444": "owner2",
+					"1112220000": "owner2",
+				},
 				ShortStrawID:   "1112223333",
 			},
 		},
@@ -274,17 +288,24 @@ extraMinutes = 1.00
 extraMessages = 2.00
 extraMegabytes = 3.00
 fees = 12.84
-deviceIds = [ "1112223333", "1112224444", "1112220000" ]`,
+[devices]
+1112223333 = "owner1"
+1112224444 = "owner2"
+1112220000 = "owner2"`,
 			bill{
 				Minutes:        35.00,
 				Messages:       8.00,
 				Megabytes:      20.00,
-				Devices:        42.00,
+				DevicesCost:    42.00,
 				ExtraMinutes:   1.00,
 				ExtraMessages:  2.00,
 				ExtraMegabytes: 3.00,
 				Fees:           12.84,
-				DeviceIds:      []string{"1112223333", "1112224444", "1112220000"},
+				Devices:        {
+					"1112223333": "owner1",
+					"1112224444": "owner2",
+					"1112220000": "owner2",
+				},
 				ShortStrawID:   "1112223333",
 			},
 		},
@@ -323,16 +344,16 @@ func TestParseMaps(t *testing.T) {
 				"1112223333": 8001,
 				"1112224444": 2999,
 			},
-			bill{
+				DevicesCost:    42.00,
 				Minutes:        35.00,
 				Messages:       8.00,
 				Megabytes:      20.00,
-				Devices:        42.00,
-				ExtraMinutes:   1.00,
+				DevicesCost:    42.00,
+				Devices:        []string{"1112223333", "1112224444", "1112220000"},
 				ExtraMessages:  2.00,
 				ExtraMegabytes: 3.00,
 				Fees:           12.85,
-				DeviceIds:      []string{"1112223333", "1112224444", "1112220000"},
+				Devices:        []string{"1112223333", "1112224444", "1112220000"},
 				ShortStrawID:   "1112220000",
 				Total:          118.84,
 			},

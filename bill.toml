@@ -1,6 +1,12 @@
 description = "Ting Bill YYYY-MM-DD"
 
-deviceIds = [ "1112223333", "1112224444", "1112220000" ]
+# deviceIds = [ "1112223333", "1112224444", "1112220000" ]
+
+[devices]
+1112223333 = "owner1"
+1112224444 = "owner2"
+1112220000 = "owner2"
+
 shortStrawId = "1112220000"
 
 total = 118.84
