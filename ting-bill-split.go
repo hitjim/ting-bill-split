@@ -36,7 +36,7 @@ type bill struct {
 	Devices        map[string]string `toml:"devices"`
 	ShortStrawID   string            `toml:"shortStrawId"`
 	Total          float64           `toml:"total"`
-	DevicesCost    float64           `toml:"devices"`
+	DevicesCost    float64           `toml:"devicesCost"`
 	Minutes        float64           `toml:"minutes"`
 	Messages       float64           `toml:"messages"`
 	Megabytes      float64           `toml:"megabytes"`
@@ -109,8 +109,9 @@ func parseMaps(min map[string]int, msg map[string]int, meg map[string]int, bil b
 	totalMsg := decimal.New(int64(usedMsg), DecimalPrecision)
 	totalMeg := decimal.New(int64(usedMeg), DecimalPrecision)
 
-	// TODO - fix this NOW
-	for _, id := range bil.DeviceIds {
+	deviceIds := bil.deviceIds()
+
+	for _, id := range deviceIds {
 		subMin := decimal.New(int64(min[id]), DecimalPrecision)
 		bs.MinutePercent[id] = subMin.Div(totalMin)
 		bs.MinuteCosts[id] = bs.MinutePercent[id].Mul(bilMinutes)
@@ -206,6 +207,9 @@ func parseBill(r io.Reader) (bill, error) {
 	}
 
 	ids := b.deviceIds()
+	fmt.Println("DEBUGGGGGGING")
+	fmt.Println(ids)
+	fmt.Println(b)
 
 	// Check to see if a shortStrawId was set. If not, set it to first one we find. Map
 	// ordering is random, so deal with it.
@@ -406,7 +410,11 @@ func createBillFile(path string) {
 		panic(err)
 	}
 
-	// TODO - fix this NOW - NEXT - why isn't this a bill??
+	// TODO - fix this NOW
+	// TODO - instead of encoding the struct, maybe define the newBill to ensure we
+	// don't forget to create requisite parts in the toml, but then use the newBill
+	// to "hand-craft" the example toml. So we can group values in a sensible way
+	// and provide helpful comment text
 	newBill := bill{
 		Description: "Ting Bill YYYY-MM-DD",
 		Devices: map[string]string{
@@ -459,7 +467,7 @@ func parseDir(path string) {
 
 	for _, file := range files {
 		if file.IsDir() {
-			fmt.Println("file is a Dir")
+			fmt.Printf("Directory \"%v\" found, continuing...\n", file.Name())
 			continue
 		}
 
@@ -647,8 +655,9 @@ func generatePDF(bs billSplit, b bill, filePath string) (string, error) {
 		// Prep data
 		values := make(map[string]usageTableVals)
 
-		// TODO - fix this NOW
-		for _, id := range b.DeviceIds {
+		deviceIds := b.deviceIds()
+
+		for _, id := range deviceIds {
 			values[id] = usageTableVals{
 				"TODO: Owner",
 				strconv.Itoa(bs.MinuteQty[id]),
@@ -847,8 +856,9 @@ func generatePDF(bs billSplit, b bill, filePath string) (string, error) {
 		// Prep data
 		values := make(map[string]splitTableVals)
 
-		// TODO - fix this NOW
-		for _, id := range b.DeviceIds {
+		deviceIds := b.deviceIds()
+
+		for _, id := range deviceIds {
 			userTotal := decimal.Sum(bs.MinuteCosts[id], bs.MessageCosts[id], bs.MegabyteCosts[id], bs.SharedCosts[id])
 			values[id] = splitTableVals{
 				"TODO: Owner",
