@@ -28,6 +28,18 @@ func (b bill) deviceIds() []string {
 	return deviceIds
 }
 
+func (b bill) ownerById(id string) string {
+	o := "Unknown"
+
+	for _, d := range b.Devices {
+		if id == d.DeviceId {
+			o = d.Owner
+		}
+	}
+
+	return o
+}
+
 type device struct {
 	DeviceId string
 	Owner    string
@@ -421,7 +433,7 @@ func createBillFile(path string) {
 	// to "hand-craft" the example toml. So we can group values in a sensible way
 	// and provide helpful comment text
 	newBill := bill{
-		Description: "Ting Bill YYYY-MM-DD",
+		Description: "Ting Bill Split YYYY-MM-DD",
 		Devices: []device{
 			device{
 				DeviceId: "1112223333",
@@ -590,7 +602,7 @@ func generatePDF(bs billSplit, b bill, filePath string) (string, error) {
 	//   (for comparison), Usage subtotal, Devices Subtotal, Tax+Reg subtotal"
 	headingTable := func(b bill, bs billSplit) {
 		pageHeading := []string{"Invoice with date", "Devices Qty", "$Total", "$Calc", "$Usage", "$Devices", "$Tax+Reg"}
-		w := []float64{40.0, 25.0, 20.0, 20.0, 20.0, 20.0, 20.0}
+		w := []float64{65.0, 25.0, 20.0, 20.0, 20.0, 20.0, 20.0}
 
 		// Print heading
 		for j, str := range pageHeading {
@@ -673,7 +685,7 @@ func generatePDF(bs billSplit, b bill, filePath string) (string, error) {
 
 		for _, id := range deviceIds {
 			values[id] = usageTableVals{
-				"TODO: Owner",
+				b.ownerById(id),
 				strconv.Itoa(bs.MinuteQty[id]),
 				strconv.Itoa(bs.MessageQty[id]),
 				strconv.Itoa(bs.MegabyteQty[id]),
@@ -875,7 +887,7 @@ func generatePDF(bs billSplit, b bill, filePath string) (string, error) {
 		for _, id := range deviceIds {
 			userTotal := decimal.Sum(bs.MinuteCosts[id], bs.MessageCosts[id], bs.MegabyteCosts[id], bs.SharedCosts[id])
 			values[id] = splitTableVals{
-				"TODO: Owner",
+				b.ownerById(id),
 				bs.MinuteCosts[id].StringFixed(2),
 				bs.MessageCosts[id].StringFixed(2),
 				bs.MegabyteCosts[id].StringFixed(2),
