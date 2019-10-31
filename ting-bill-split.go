@@ -401,6 +401,8 @@ func createNewBillingDir(args []string) {
 			fmt.Printf("\n1. Enter values for the bill.toml file in new directory `%s`\n", newDirName)
 			fmt.Println("2. Add csv files for minutes, message, megabytes in the new directory")
 			fmt.Printf("3. run `ting-bill-split dir %s`\n", newDirName)
+		} else {
+			fmt.Println("Directory already exists.")
 		}
 	}
 }
