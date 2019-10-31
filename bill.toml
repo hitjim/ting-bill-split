@@ -1,9 +1,16 @@
 description = "Ting Bill YYYY-MM-DD"
 
-[devices]
-"1112223333" = "owner1"
-"1112224444" = "owner2"
-"1112220000" = "owner2"
+[[devices]]
+deviceId = "1112223333"
+owner = "owner1"
+
+[[devices]]
+deviceId = "1112224444"
+owner = "owner2"
+
+[[devices]]
+deviceId = "1112220000"
+owner = "owner2"
 
 shortStrawId = "1112220000"
 

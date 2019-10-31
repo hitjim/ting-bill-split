@@ -21,29 +21,32 @@ import (
 func (b bill) deviceIds() []string {
 	deviceIds := make([]string, len(b.Devices))
 
-	i := 0
-	for k := range b.Devices {
-		deviceIds[i] = k
-		i++
+	for i, d := range b.Devices {
+		deviceIds[i] = d.DeviceId
 	}
 
 	return deviceIds
 }
 
+type device struct {
+	DeviceId string
+	Owner    string
+}
+
 // Used to represent the Ting-provided and user-provided info required to split bill costs
 type bill struct {
-	Description    string            `toml:"description"`
-	Devices        map[string]string `toml:"devices"`
-	ShortStrawID   string            `toml:"shortStrawId"`
-	Total          float64           `toml:"total"`
-	DevicesCost    float64           `toml:"devicesCost"`
-	Minutes        float64           `toml:"minutes"`
-	Messages       float64           `toml:"messages"`
-	Megabytes      float64           `toml:"megabytes"`
-	ExtraMinutes   float64           `toml:"extraMinutes"`
-	ExtraMessages  float64           `toml:"extraMessages"`
-	ExtraMegabytes float64           `toml:"extraMegabytes"`
-	Fees           float64           `toml:"fees"`
+	Description    string   `toml:"description"`
+	Devices        []device `toml:"devices"`
+	ShortStrawID   string   `toml:"shortStrawId"`
+	Total          float64  `toml:"total"`
+	DevicesCost    float64  `toml:"devicesCost"`
+	Minutes        float64  `toml:"minutes"`
+	Messages       float64  `toml:"messages"`
+	Megabytes      float64  `toml:"megabytes"`
+	ExtraMinutes   float64  `toml:"extraMinutes"`
+	ExtraMessages  float64  `toml:"extraMessages"`
+	ExtraMegabytes float64  `toml:"extraMegabytes"`
+	Fees           float64  `toml:"fees"`
 }
 
 // Used to contain all subtotals for a monthly bill.
@@ -417,10 +420,19 @@ func createBillFile(path string) {
 	// and provide helpful comment text
 	newBill := bill{
 		Description: "Ting Bill YYYY-MM-DD",
-		Devices: map[string]string{
-			"1112223333": "owner1",
-			"2229998888": "owner2",
-			"3331119999": "owner1",
+		Devices: []device{
+			device{
+				DeviceId: "1112223333",
+				Owner:    "owner1",
+			},
+			device{
+				DeviceId: "2229998888",
+				Owner:    "owner2",
+			},
+			device{
+				DeviceId: "3331119999",
+				Owner:    "owner1",
+			},
 		},
 		ShortStrawID:   "1112223333",
 		Total:          0.00,
