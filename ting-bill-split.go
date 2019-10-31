@@ -222,9 +222,6 @@ func parseBill(r io.Reader) (bill, error) {
 	}
 
 	ids := b.deviceIds()
-	fmt.Println("DEBUGGGGGGING")
-	fmt.Println(ids)
-	fmt.Println(b)
 
 	// Check to see if a shortStrawId was set. If not, set it to first one we find. Map
 	// ordering is random, so deal with it.
