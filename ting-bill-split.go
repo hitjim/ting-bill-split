@@ -424,7 +424,6 @@ func createBillFile(path string) {
 		panic(err)
 	}
 
-	// TODO - fix this NOW
 	// TODO - instead of encoding the struct, maybe define the newBill to ensure we
 	// don't forget to create requisite parts in the toml, but then use the newBill
 	// to "hand-craft" the example toml. So we can group values in a sensible way
