@@ -1,19 +1,5 @@
 description = "Ting Bill YYYY-MM-DD"
 
-[[devices]]
-deviceId = "1112223333"
-owner = "owner1"
-
-[[devices]]
-deviceId = "1112224444"
-owner = "owner2"
-
-[[devices]]
-deviceId = "1112220000"
-owner = "owner2"
-
-shortStrawId = "1112220000"
-
 total = 118.84
 
 devicesCost = 42.00
@@ -27,3 +13,17 @@ extraMessages = 2.00
 extraMegabytes = 3.00
 
 fees = 28.74
+
+shortStrawId = "1112220000"
+
+[[devices]]
+deviceId = "1112223333"
+owner = "owner1"
+
+[[devices]]
+deviceId = "1112224444"
+owner = "owner2"
+
+[[devices]]
+deviceId = "1112220000"
+owner = "owner2"
