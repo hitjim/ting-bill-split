@@ -18,13 +18,40 @@ import (
 	"github.com/shopspring/decimal"
 )
 
+func (b bill) deviceIds() []string {
+	deviceIds := make([]string, len(b.Devices))
+
+	for i, d := range b.Devices {
+		deviceIds[i] = d.DeviceId
+	}
+
+	return deviceIds
+}
+
+func (b bill) ownerById(id string) string {
+	o := "Unknown"
+
+	for _, d := range b.Devices {
+		if id == d.DeviceId {
+			o = d.Owner
+		}
+	}
+
+	return o
+}
+
+type device struct {
+	DeviceId string
+	Owner    string
+}
+
 // Used to represent the Ting-provided and user-provided info required to split bill costs
 type bill struct {
 	Description    string   `toml:"description"`
-	DeviceIds      []string `toml:"deviceIds"`
+	Devices        []device `toml:"devices"`
 	ShortStrawID   string   `toml:"shortStrawId"`
 	Total          float64  `toml:"total"`
-	Devices        float64  `toml:"devices"`
+	DevicesCost    float64  `toml:"devicesCost"`
 	Minutes        float64  `toml:"minutes"`
 	Messages       float64  `toml:"messages"`
 	Megabytes      float64  `toml:"megabytes"`
@@ -36,7 +63,7 @@ type bill struct {
 
 // Used to contain all subtotals for a monthly bill.
 // MinuteCosts, MessageCosts, MegabyteCosts are maps of decimal.Decimal totals.
-// They are split by bill.DeviceIds and calculated by usage in parseMaps.
+// They are split by bill.Devices and calculated by usage in parseMaps.
 // SharedCosts reflect the rest of the items not based on usage, which get split evenly across all deviceIds
 // TODO: finish these comments
 type billSplit struct {
@@ -77,8 +104,8 @@ func parseMaps(min map[string]int, msg map[string]int, meg map[string]int, bil b
 	bilMinutes := decimal.NewFromFloat(bil.Minutes + bil.ExtraMinutes)
 	bilMessages := decimal.NewFromFloat(bil.Messages + bil.ExtraMessages)
 	bilMegabytes := decimal.NewFromFloat(bil.Megabytes + bil.ExtraMegabytes)
-	delta := decimal.NewFromFloat(bil.Devices + bil.Fees).Round(DecimalPrecision)
-	deviceQty := decimal.New(int64(len(bil.DeviceIds)), 0)
+	delta := decimal.NewFromFloat(bil.DevicesCost + bil.Fees).Round(DecimalPrecision)
+	deviceQty := decimal.New(int64(len(bil.Devices)), 0)
 
 	// Calculate usage totals
 	for _, v := range min {
@@ -97,7 +124,9 @@ func parseMaps(min map[string]int, msg map[string]int, meg map[string]int, bil b
 	totalMsg := decimal.New(int64(usedMsg), DecimalPrecision)
 	totalMeg := decimal.New(int64(usedMeg), DecimalPrecision)
 
-	for _, id := range bil.DeviceIds {
+	deviceIds := bil.deviceIds()
+
+	for _, id := range deviceIds {
 		subMin := decimal.New(int64(min[id]), DecimalPrecision)
 		bs.MinutePercent[id] = subMin.Div(totalMin)
 		bs.MinuteCosts[id] = bs.MinutePercent[id].Mul(bilMinutes)
@@ -192,10 +221,14 @@ func parseBill(r io.Reader) (bill, error) {
 		return bill{}, err
 	}
 
-	phoneIndex := sliceIndex(len(b.DeviceIds), func(i int) bool { return b.DeviceIds[i] == b.ShortStrawID })
+	ids := b.deviceIds()
+
+	// Check to see if a shortStrawId was set. If not, set it to first one we find. Map
+	// ordering is random, so deal with it.
+	phoneIndex := sliceIndex(len(ids), func(i int) bool { return ids[i] == b.ShortStrawID })
 
 	if phoneIndex < 0 {
-		b.ShortStrawID = b.DeviceIds[0]
+		b.ShortStrawID = ids[0]
 	}
 
 	return b, nil
@@ -377,6 +410,8 @@ func createNewBillingDir(args []string) {
 			fmt.Printf("\n1. Enter values for the bill.toml file in new directory `%s`\n", newDirName)
 			fmt.Println("2. Add csv files for minutes, message, megabytes in the new directory")
 			fmt.Printf("3. run `ting-bill-split dir %s`\n", newDirName)
+		} else {
+			fmt.Println("Directory already exists.")
 		}
 	}
 }
@@ -389,12 +424,29 @@ func createBillFile(path string) {
 		panic(err)
 	}
 
+	// TODO - instead of encoding the struct, maybe define the newBill to ensure we
+	// don't forget to create requisite parts in the toml, but then use the newBill
+	// to "hand-craft" the example toml. So we can group values in a sensible way
+	// and provide helpful comment text
 	newBill := bill{
-		Description:    "Ting Bill YYYY-MM-DD",
-		DeviceIds:      []string{"1112223333", "2229998888", "etc"},
+		Description: "Ting Bill Split YYYY-MM-DD",
+		Devices: []device{
+			device{
+				DeviceId: "1112223333",
+				Owner:    "owner1",
+			},
+			device{
+				DeviceId: "2229998888",
+				Owner:    "owner2",
+			},
+			device{
+				DeviceId: "3331119999",
+				Owner:    "owner1",
+			},
+		},
 		ShortStrawID:   "1112223333",
 		Total:          0.00,
-		Devices:        0.00,
+		DevicesCost:    0.00,
 		Minutes:        0.00,
 		Messages:       0.00,
 		Megabytes:      0.00,
@@ -437,7 +489,7 @@ func parseDir(path string) {
 
 	for _, file := range files {
 		if file.IsDir() {
-			fmt.Println("file is a Dir")
+			fmt.Printf("Directory \"%v\" found, continuing...\n", file.Name())
 			continue
 		}
 
@@ -546,7 +598,7 @@ func generatePDF(bs billSplit, b bill, filePath string) (string, error) {
 	//   (for comparison), Usage subtotal, Devices Subtotal, Tax+Reg subtotal"
 	headingTable := func(b bill, bs billSplit) {
 		pageHeading := []string{"Invoice with date", "Devices Qty", "$Total", "$Calc", "$Usage", "$Devices", "$Tax+Reg"}
-		w := []float64{40.0, 25.0, 20.0, 20.0, 20.0, 20.0, 20.0}
+		w := []float64{65.0, 25.0, 20.0, 20.0, 20.0, 20.0, 20.0}
 
 		// Print heading
 		for j, str := range pageHeading {
@@ -579,11 +631,11 @@ func generatePDF(bs billSplit, b bill, filePath string) (string, error) {
 
 		values := []string{
 			b.Description,
-			strconv.Itoa(len(b.DeviceIds)),
+			strconv.Itoa(len(b.Devices)),
 			strconv.FormatFloat(b.Total, 'f', 2, 64),
 			calcCost.StringFixed(2),
 			usgCost.StringFixed(2),
-			strconv.FormatFloat(b.Devices, 'f', 2, 64),
+			strconv.FormatFloat(b.DevicesCost, 'f', 2, 64),
 			strconv.FormatFloat(b.Fees, 'f', 2, 64),
 		}
 
@@ -625,9 +677,11 @@ func generatePDF(bs billSplit, b bill, filePath string) (string, error) {
 		// Prep data
 		values := make(map[string]usageTableVals)
 
-		for _, id := range b.DeviceIds {
+		deviceIds := b.deviceIds()
+
+		for _, id := range deviceIds {
 			values[id] = usageTableVals{
-				"TODO: Owner Name",
+				b.ownerById(id),
 				strconv.Itoa(bs.MinuteQty[id]),
 				strconv.Itoa(bs.MessageQty[id]),
 				strconv.Itoa(bs.MegabyteQty[id]),
@@ -765,12 +819,12 @@ func generatePDF(bs billSplit, b bill, filePath string) (string, error) {
 		pdf.Ln(-1)
 
 		// Prep data
-		sTotal := strconv.FormatFloat(b.Devices+b.Fees, 'f', 2, 64)
+		sTotal := strconv.FormatFloat(b.DevicesCost+b.Fees, 'f', 2, 64)
 
 		values := []sharedTableVals{
 			{
 				costType: "Devices",
-				amount:   strconv.FormatFloat(b.Devices, 'f', 2, 64),
+				amount:   strconv.FormatFloat(b.DevicesCost, 'f', 2, 64),
 			},
 			{
 				costType: "Tax & Reg",
@@ -824,10 +878,12 @@ func generatePDF(bs billSplit, b bill, filePath string) (string, error) {
 		// Prep data
 		values := make(map[string]splitTableVals)
 
-		for _, id := range b.DeviceIds {
+		deviceIds := b.deviceIds()
+
+		for _, id := range deviceIds {
 			userTotal := decimal.Sum(bs.MinuteCosts[id], bs.MessageCosts[id], bs.MegabyteCosts[id], bs.SharedCosts[id])
 			values[id] = splitTableVals{
-				"TODO: Owner",
+				b.ownerById(id),
 				bs.MinuteCosts[id].StringFixed(2),
 				bs.MessageCosts[id].StringFixed(2),
 				bs.MegabyteCosts[id].StringFixed(2),
