@@ -305,10 +305,12 @@ func TestParseMaps(t *testing.T) {
 				"1112224444": 2999,
 			},
 			bill{
+				Description:    "TestParseMaps",
 				DevicesCost:    42.00,
 				Minutes:        35.00,
 				Messages:       8.00,
 				Megabytes:      20.00,
+				ExtraMinutes:   1.00,
 				ExtraMessages:  2.00,
 				ExtraMegabytes: 3.00,
 				Fees:           12.85,
