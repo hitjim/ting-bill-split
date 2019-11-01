@@ -223,8 +223,9 @@ func parseBill(r io.Reader) (bill, error) {
 
 	ids := b.deviceIds()
 
-	// Check to see if a shortStrawId was set. If not, set it to first one we find. Map
-	// ordering is random, so deal with it.
+	// Check to see if a shortStrawId was set. If not, set it to first one we find.
+	// Ordering is random, so deal with it.
+	// TODO - make this more testable
 	phoneIndex := sliceIndex(len(ids), func(i int) bool { return ids[i] == b.ShortStrawID })
 
 	if phoneIndex < 0 {
