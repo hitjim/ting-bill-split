@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strconv"
 
 	"github.com/BurntSushi/toml"
@@ -576,12 +577,12 @@ func parseDir(path string) {
 
 		pdfFilePath := filepath.Join(path, billData.Description+".pdf")
 
-		invoiceNames, err := generatePDF(split, billData, pdfFilePath)
+		invoiceName, err := generatePDF(split, billData, pdfFilePath)
 		if err != nil {
 			fmt.Printf("Failed to generate invoice at path: %v\n\n", pdfFilePath)
 			log.Fatal(err)
 		}
-		fmt.Printf("Invoice generation complete: %s\n\n", invoiceNames)
+		fmt.Printf("Invoice generation complete: %s\n\n", invoiceName)
 	}
 }
 
@@ -699,6 +700,8 @@ func generatePDF(bs billSplit, b bill, filePath string) (string, error) {
 			ids[i] = k
 			i++
 		}
+
+		sort.Strings(ids)
 
 		// Print data
 		pdf.SetXY(10, pdf.GetY())
@@ -880,6 +883,7 @@ func generatePDF(bs billSplit, b bill, filePath string) (string, error) {
 		values := make(map[string]splitTableVals)
 
 		deviceIds := b.deviceIds()
+		sort.Strings(deviceIds)
 
 		for _, id := range deviceIds {
 			userTotal := decimal.Sum(bs.MinuteCosts[id], bs.MessageCosts[id], bs.MegabyteCosts[id], bs.SharedCosts[id])
@@ -1005,6 +1009,7 @@ func main() {
 			printUsageHelp()
 		default:
 			fmt.Printf("\nInvalid arguments provided\n")
+			printUsageHelp()
 		}
 	} else {
 		badParam := false
