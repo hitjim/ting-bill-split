@@ -11,7 +11,6 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"sort"
 	"strconv"
 
 	"github.com/BurntSushi/toml"
@@ -657,6 +656,7 @@ func generatePDF(bs billSplit, b bill, filePath string) (string, error) {
 	// then entry for "Total" under nickname, and rest of sums
 	usageTable := func(b bill, bs billSplit) {
 		type usageTableVals struct {
+			id         string
 			owner      string
 			minutes    string
 			messages   string
@@ -678,11 +678,11 @@ func generatePDF(bs billSplit, b bill, filePath string) (string, error) {
 
 		// Prep data
 		values := make(map[string]usageTableVals)
+		ids := b.deviceIds()
 
-		deviceIds := b.deviceIds()
-
-		for _, id := range deviceIds {
+		for _, id := range ids {
 			values[id] = usageTableVals{
+				id,
 				b.ownerById(id),
 				strconv.Itoa(bs.MinuteQty[id]),
 				strconv.Itoa(bs.MessageQty[id]),
@@ -694,14 +694,6 @@ func generatePDF(bs billSplit, b bill, filePath string) (string, error) {
 		}
 
 		// TODO: turn this into some kind of getMapKeys if it gets too crazy
-		ids := make([]string, len(values))
-		i := 0
-		for k := range values {
-			ids[i] = k
-			i++
-		}
-
-		sort.Strings(ids)
 
 		// Print data
 		pdf.SetXY(10, pdf.GetY())
@@ -710,23 +702,23 @@ func generatePDF(bs billSplit, b bill, filePath string) (string, error) {
 
 		for i, id := range ids {
 			wi = 0
-			rowVals := values[id]
+			row := values[id]
 
-			pdf.CellFormat(w[wi], 7, id, "1", 0, "C", false, 0, "")
+			pdf.CellFormat(w[wi], 7, row.id, "1", 0, "C", false, 0, "")
 			wi++
-			pdf.CellFormat(w[wi], 7, rowVals.owner, "1", 0, "C", false, 0, "")
+			pdf.CellFormat(w[wi], 7, row.owner, "1", 0, "C", false, 0, "")
 			wi++
-			pdf.CellFormat(w[wi], 7, rowVals.minutes, "1", 0, "R", false, 0, "")
+			pdf.CellFormat(w[wi], 7, row.minutes, "1", 0, "R", false, 0, "")
 			wi++
-			pdf.CellFormat(w[wi], 7, rowVals.messages, "1", 0, "R", false, 0, "")
+			pdf.CellFormat(w[wi], 7, row.messages, "1", 0, "R", false, 0, "")
 			wi++
-			pdf.CellFormat(w[wi], 7, rowVals.data, "1", 0, "R", false, 0, "")
+			pdf.CellFormat(w[wi], 7, row.data, "1", 0, "R", false, 0, "")
 			wi++
-			pdf.CellFormat(w[wi], 7, rowVals.percentMin, "1", 0, "C", false, 0, "")
+			pdf.CellFormat(w[wi], 7, row.percentMin, "1", 0, "C", false, 0, "")
 			wi++
-			pdf.CellFormat(w[wi], 7, rowVals.percentMsg, "1", 0, "C", false, 0, "")
+			pdf.CellFormat(w[wi], 7, row.percentMsg, "1", 0, "C", false, 0, "")
 			wi++
-			pdf.CellFormat(w[wi], 7, rowVals.percentMeg, "1", 0, "C", false, 0, "")
+			pdf.CellFormat(w[wi], 7, row.percentMeg, "1", 0, "C", false, 0, "")
 			if i < valuesBound {
 				pdf.SetXY(10, pdf.GetY()+7)
 			}
@@ -788,11 +780,11 @@ func generatePDF(bs billSplit, b bill, filePath string) (string, error) {
 		pdf.SetXY(10, pdf.GetY())
 		valuesBound := len(values) - 1
 
-		for i, rowVals := range values {
-			pdf.CellFormat(25.0, 7, rowVals.name, "1", 0, "C", false, 0, "")
-			pdf.CellFormat(25.0, 7, rowVals.minutes, "1", 0, "C", false, 0, "")
-			pdf.CellFormat(25.0, 7, rowVals.messages, "1", 0, "C", false, 0, "")
-			pdf.CellFormat(25.0, 7, rowVals.data, "1", 0, "C", false, 0, "")
+		for i, row := range values {
+			pdf.CellFormat(25.0, 7, row.name, "1", 0, "C", false, 0, "")
+			pdf.CellFormat(25.0, 7, row.minutes, "1", 0, "C", false, 0, "")
+			pdf.CellFormat(25.0, 7, row.messages, "1", 0, "C", false, 0, "")
+			pdf.CellFormat(25.0, 7, row.data, "1", 0, "C", false, 0, "")
 
 			if i < valuesBound {
 				pdf.SetXY(10, pdf.GetY()+7)
@@ -844,9 +836,9 @@ func generatePDF(bs billSplit, b bill, filePath string) (string, error) {
 		pdf.SetXY(10, pdf.GetY())
 		valuesBound := len(values) - 1
 
-		for i, rowVals := range values {
-			pdf.CellFormat(25.0, 7, rowVals.costType, "1", 0, "L", false, 0, "")
-			pdf.CellFormat(25.0, 7, rowVals.amount, "1", 0, "R", false, 0, "")
+		for i, row := range values {
+			pdf.CellFormat(25.0, 7, row.costType, "1", 0, "L", false, 0, "")
+			pdf.CellFormat(25.0, 7, row.amount, "1", 0, "R", false, 0, "")
 
 			if i < valuesBound {
 				pdf.SetXY(10, pdf.GetY()+7)
@@ -861,6 +853,7 @@ func generatePDF(bs billSplit, b bill, filePath string) (string, error) {
 	// entry for each number
 	splitTable := func(bs billSplit) {
 		type splitTableVals struct {
+			id       string
 			owner    string
 			minutes  string
 			messages string
@@ -882,12 +875,12 @@ func generatePDF(bs billSplit, b bill, filePath string) (string, error) {
 		// Prep data
 		values := make(map[string]splitTableVals)
 
-		deviceIds := b.deviceIds()
-		sort.Strings(deviceIds)
+		ids := b.deviceIds()
 
-		for _, id := range deviceIds {
+		for _, id := range ids {
 			userTotal := decimal.Sum(bs.MinuteCosts[id], bs.MessageCosts[id], bs.MegabyteCosts[id], bs.SharedCosts[id])
 			values[id] = splitTableVals{
+				id,
 				b.ownerById(id),
 				bs.MinuteCosts[id].StringFixed(2),
 				bs.MessageCosts[id].StringFixed(2),
@@ -897,13 +890,6 @@ func generatePDF(bs billSplit, b bill, filePath string) (string, error) {
 			}
 		}
 
-		ids := make([]string, len(values))
-		i := 0
-		for k := range values {
-			ids[i] = k
-			i++
-		}
-
 		// Print data
 		pdf.SetXY(10, pdf.GetY())
 		var wi int
@@ -911,21 +897,21 @@ func generatePDF(bs billSplit, b bill, filePath string) (string, error) {
 
 		for i, id := range ids {
 			wi = 0
-			rowVals := values[id]
+			row := values[id]
 
-			pdf.CellFormat(w[wi], 7, id, "1", 0, "C", false, 0, "")
+			pdf.CellFormat(w[wi], 7, row.id, "1", 0, "C", false, 0, "")
 			wi++
-			pdf.CellFormat(w[wi], 7, rowVals.owner, "1", 0, "C", false, 0, "")
+			pdf.CellFormat(w[wi], 7, row.owner, "1", 0, "C", false, 0, "")
 			wi++
-			pdf.CellFormat(w[wi], 7, rowVals.minutes, "1", 0, "R", false, 0, "")
+			pdf.CellFormat(w[wi], 7, row.minutes, "1", 0, "R", false, 0, "")
 			wi++
-			pdf.CellFormat(w[wi], 7, rowVals.messages, "1", 0, "R", false, 0, "")
+			pdf.CellFormat(w[wi], 7, row.messages, "1", 0, "R", false, 0, "")
 			wi++
-			pdf.CellFormat(w[wi], 7, rowVals.data, "1", 0, "R", false, 0, "")
+			pdf.CellFormat(w[wi], 7, row.data, "1", 0, "R", false, 0, "")
 			wi++
-			pdf.CellFormat(w[wi], 7, rowVals.shared, "1", 0, "R", false, 0, "")
+			pdf.CellFormat(w[wi], 7, row.shared, "1", 0, "R", false, 0, "")
 			wi++
-			pdf.CellFormat(w[wi], 7, rowVals.total, "1", 0, "R", false, 0, "")
+			pdf.CellFormat(w[wi], 7, row.total, "1", 0, "R", false, 0, "")
 			wi++
 			if i < valuesBound {
 				pdf.SetXY(10, pdf.GetY()+7)
