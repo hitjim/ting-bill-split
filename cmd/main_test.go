@@ -253,15 +253,15 @@ owner = "owner2"`,
 				Fees:           12.85,
 				Devices: []device{
 					device{
-						DeviceId: "1112223333",
+						DeviceID: "1112223333",
 						Owner:    "owner1",
 					},
 					device{
-						DeviceId: "1112224444",
+						DeviceID: "1112224444",
 						Owner:    "owner2",
 					},
 					device{
-						DeviceId: "1112220000",
+						DeviceID: "1112220000",
 						Owner:    "owner2",
 					},
 				},
@@ -316,15 +316,15 @@ func TestParseMaps(t *testing.T) {
 				Fees:           12.85,
 				Devices: []device{
 					device{
-						DeviceId: "1112223333",
+						DeviceID: "1112223333",
 						Owner:    "owner1",
 					},
 					device{
-						DeviceId: "1112224444",
+						DeviceID: "1112224444",
 						Owner:    "owner2",
 					},
 					device{
-						DeviceId: "1112220000",
+						DeviceID: "1112220000",
 						Owner:    "owner1",
 					},
 				},

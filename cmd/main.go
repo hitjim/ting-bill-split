@@ -22,17 +22,17 @@ func (b bill) deviceIds() []string {
 	deviceIds := make([]string, len(b.Devices))
 
 	for i, d := range b.Devices {
-		deviceIds[i] = d.DeviceId
+		deviceIds[i] = d.DeviceID
 	}
 
 	return deviceIds
 }
 
-func (b bill) ownerById(id string) string {
+func (b bill) ownerByID(id string) string {
 	o := "Unknown"
 
 	for _, d := range b.Devices {
-		if id == d.DeviceId {
+		if id == d.DeviceID {
 			o = d.Owner
 		}
 	}
@@ -41,7 +41,7 @@ func (b bill) ownerById(id string) string {
 }
 
 type device struct {
-	DeviceId string
+	DeviceID string
 	Owner    string
 }
 
@@ -77,12 +77,6 @@ type billSplit struct {
 	MegabyteQty     map[string]int
 	MegabytePercent map[string]decimal.Decimal
 	SharedCosts     map[string]decimal.Decimal
-}
-
-type totals struct {
-	TotalMinutes   int
-	TotalMessages  int
-	TotalMegabytes int
 }
 
 func parseMaps(min map[string]int, msg map[string]int, meg map[string]int, bil bill) (billSplit, error) {
@@ -433,15 +427,15 @@ func createBillFile(path string) {
 		Description: "Ting Bill Split YYYY-MM-DD",
 		Devices: []device{
 			device{
-				DeviceId: "1112223333",
+				DeviceID: "1112223333",
 				Owner:    "owner1",
 			},
 			device{
-				DeviceId: "2229998888",
+				DeviceID: "2229998888",
 				Owner:    "owner2",
 			},
 			device{
-				DeviceId: "3331119999",
+				DeviceID: "3331119999",
 				Owner:    "owner1",
 			},
 		},
@@ -683,7 +677,7 @@ func generatePDF(bs billSplit, b bill, filePath string) (string, error) {
 		for _, id := range ids {
 			values[id] = usageTableVals{
 				id,
-				b.ownerById(id),
+				b.ownerByID(id),
 				strconv.Itoa(bs.MinuteQty[id]),
 				strconv.Itoa(bs.MessageQty[id]),
 				strconv.Itoa(bs.MegabyteQty[id]),
@@ -881,7 +875,7 @@ func generatePDF(bs billSplit, b bill, filePath string) (string, error) {
 			userTotal := decimal.Sum(bs.MinuteCosts[id], bs.MessageCosts[id], bs.MegabyteCosts[id], bs.SharedCosts[id])
 			values[id] = splitTableVals{
 				id,
-				b.ownerById(id),
+				b.ownerByID(id),
 				bs.MinuteCosts[id].StringFixed(2),
 				bs.MessageCosts[id].StringFixed(2),
 				bs.MegabyteCosts[id].StringFixed(2),
