@@ -4,6 +4,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/hitjim/ting-bill-split/internal/tingbill"
+
 	"github.com/google/go-cmp/cmp"
 	"github.com/shopspring/decimal"
 )
@@ -215,7 +217,7 @@ func TestIsFileMatch(t *testing.T) {
 func TestParseBill(t *testing.T) {
 	cases := []struct {
 		in   string
-		want bill
+		want tingbill.Bill
 	}{
 		{
 			`description = "First test desc"
@@ -241,7 +243,7 @@ owner = "owner2"
 [[devices]]
 deviceId = "1112220000"
 owner = "owner2"`,
-			bill{
+			tingbill.Bill{
 				Description:    "First test desc",
 				DevicesCost:    42.00,
 				Minutes:        35.00,
@@ -251,16 +253,16 @@ owner = "owner2"`,
 				ExtraMessages:  2.00,
 				ExtraMegabytes: 3.00,
 				Fees:           12.85,
-				Devices: []device{
-					device{
+				Devices: []tingbill.Device{
+					tingbill.Device{
 						DeviceID: "1112223333",
 						Owner:    "owner1",
 					},
-					device{
+					tingbill.Device{
 						DeviceID: "1112224444",
 						Owner:    "owner2",
 					},
-					device{
+					tingbill.Device{
 						DeviceID: "1112220000",
 						Owner:    "owner2",
 					},
@@ -288,8 +290,8 @@ func TestParseMaps(t *testing.T) {
 		min  map[string]int
 		msg  map[string]int
 		meg  map[string]int
-		bil  bill
-		want billSplit
+		bil  tingbill.Bill
+		want tingbill.BillSplit
 	}{
 		{
 			map[string]int{
@@ -304,7 +306,7 @@ func TestParseMaps(t *testing.T) {
 				"1112223333": 8001,
 				"1112224444": 2999,
 			},
-			bill{
+			tingbill.Bill{
 				Description:    "TestParseMaps",
 				DevicesCost:    42.00,
 				Minutes:        35.00,
@@ -314,16 +316,16 @@ func TestParseMaps(t *testing.T) {
 				ExtraMessages:  2.00,
 				ExtraMegabytes: 3.00,
 				Fees:           12.85,
-				Devices: []device{
-					device{
+				Devices: []tingbill.Device{
+					tingbill.Device{
 						DeviceID: "1112223333",
 						Owner:    "owner1",
 					},
-					device{
+					tingbill.Device{
 						DeviceID: "1112224444",
 						Owner:    "owner2",
 					},
-					device{
+					tingbill.Device{
 						DeviceID: "1112220000",
 						Owner:    "owner1",
 					},
@@ -331,7 +333,7 @@ func TestParseMaps(t *testing.T) {
 				ShortStrawID: "1112220000",
 				Total:        118.84,
 			},
-			billSplit{
+			tingbill.BillSplit{
 				MinuteCosts: map[string]decimal.Decimal{
 					"1112220000": decimal.NewFromFloat(0).Round(DecimalPrecision),
 					"1112223333": decimal.NewFromFloat(28.8).Round(DecimalPrecision),

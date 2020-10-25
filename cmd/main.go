@@ -13,74 +13,15 @@ import (
 	"regexp"
 	"strconv"
 
+	"github.com/hitjim/ting-bill-split/internal/tingbill"
+
 	"github.com/BurntSushi/toml"
 	"github.com/jung-kurt/gofpdf"
 	"github.com/shopspring/decimal"
 )
 
-func (b bill) deviceIds() []string {
-	deviceIds := make([]string, len(b.Devices))
-
-	for i, d := range b.Devices {
-		deviceIds[i] = d.DeviceID
-	}
-
-	return deviceIds
-}
-
-func (b bill) ownerByID(id string) string {
-	o := "Unknown"
-
-	for _, d := range b.Devices {
-		if id == d.DeviceID {
-			o = d.Owner
-		}
-	}
-
-	return o
-}
-
-type device struct {
-	DeviceID string
-	Owner    string
-}
-
-// Used to represent the Ting-provided and user-provided info required to split bill costs
-type bill struct {
-	Description    string   `toml:"description"`
-	Devices        []device `toml:"devices"`
-	ShortStrawID   string   `toml:"shortStrawId"`
-	Total          float64  `toml:"total"`
-	DevicesCost    float64  `toml:"devicesCost"`
-	Minutes        float64  `toml:"minutes"`
-	Messages       float64  `toml:"messages"`
-	Megabytes      float64  `toml:"megabytes"`
-	ExtraMinutes   float64  `toml:"extraMinutes"`
-	ExtraMessages  float64  `toml:"extraMessages"`
-	ExtraMegabytes float64  `toml:"extraMegabytes"`
-	Fees           float64  `toml:"fees"`
-}
-
-// Used to contain all subtotals for a monthly bill.
-// MinuteCosts, MessageCosts, MegabyteCosts are maps of decimal.Decimal totals.
-// They are split by bill.Devices and calculated by usage in parseMaps.
-// SharedCosts reflect the rest of the items not based on usage, which get split evenly across all deviceIds
-// TODO: finish these comments
-type billSplit struct {
-	MinuteCosts     map[string]decimal.Decimal
-	MinuteQty       map[string]int
-	MinutePercent   map[string]decimal.Decimal
-	MessageCosts    map[string]decimal.Decimal
-	MessageQty      map[string]int
-	MessagePercent  map[string]decimal.Decimal
-	MegabyteCosts   map[string]decimal.Decimal
-	MegabyteQty     map[string]int
-	MegabytePercent map[string]decimal.Decimal
-	SharedCosts     map[string]decimal.Decimal
-}
-
-func parseMaps(min map[string]int, msg map[string]int, meg map[string]int, bil bill) (billSplit, error) {
-	bs := billSplit{
+func parseMaps(min map[string]int, msg map[string]int, meg map[string]int, bil tingbill.Bill) (tingbill.BillSplit, error) {
+	bs := tingbill.BillSplit{
 		make(map[string]decimal.Decimal),
 		make(map[string]int),
 		make(map[string]decimal.Decimal),
@@ -118,13 +59,13 @@ func parseMaps(min map[string]int, msg map[string]int, meg map[string]int, bil b
 	totalMsg := decimal.New(int64(usedMsg), DecimalPrecision)
 	totalMeg := decimal.New(int64(usedMeg), DecimalPrecision)
 
-	deviceIds := bil.deviceIds()
+	deviceIds := bil.DeviceIds()
 
 	for _, id := range deviceIds {
 		subMin := decimal.New(int64(min[id]), DecimalPrecision)
 		bs.MinutePercent[id] = subMin.Div(totalMin)
 		bs.MinuteCosts[id] = bs.MinutePercent[id].Mul(bilMinutes)
-		// It's possible for a device to still be on the bill, but not show any usage data
+		// It's possible for a device to still be on the Bill, but not show any usage data
 		if value, exists := min[id]; exists {
 			bs.MinuteQty[id] = value
 		} else {
@@ -134,7 +75,7 @@ func parseMaps(min map[string]int, msg map[string]int, meg map[string]int, bil b
 		subMsg := decimal.New(int64(msg[id]), DecimalPrecision)
 		bs.MessagePercent[id] = subMsg.DivRound(totalMsg, DecimalPrecision)
 		bs.MessageCosts[id] = bs.MessagePercent[id].Mul(bilMessages)
-		// It's possible for a device to still be on the bill, but not show any usage data
+		// It's possible for a device to still be on the Bill, but not show any usage data
 		if value, exists := msg[id]; exists {
 			bs.MessageQty[id] = value
 		} else {
@@ -144,7 +85,7 @@ func parseMaps(min map[string]int, msg map[string]int, meg map[string]int, bil b
 		subMeg := decimal.New(int64(meg[id]), DecimalPrecision)
 		bs.MegabytePercent[id] = subMeg.DivRound(totalMeg, DecimalPrecision)
 		bs.MegabyteCosts[id] = bs.MegabytePercent[id].Mul(bilMegabytes)
-		// It's possible for a device to still be on the bill, but not show any usage data
+		// It's possible for a device to still be on the Bill, but not show any usage data
 		if value, exists := meg[id]; exists {
 			bs.MegabyteQty[id] = value
 		} else {
@@ -209,13 +150,13 @@ func parseMaps(min map[string]int, msg map[string]int, meg map[string]int, bil b
 	return bs, nil
 }
 
-func parseBill(r io.Reader) (bill, error) {
-	var b bill
+func parseBill(r io.Reader) (tingbill.Bill, error) {
+	var b tingbill.Bill
 	if _, err := toml.DecodeReader(r, &b); err != nil {
-		return bill{}, err
+		return tingbill.Bill{}, err
 	}
 
-	ids := b.deviceIds()
+	ids := b.DeviceIds()
 
 	// Check to see if a shortStrawId was set. If not, set it to first one we find.
 	// Ordering is random, so deal with it.
@@ -423,18 +364,18 @@ func createBillFile(path string) {
 	// don't forget to create requisite parts in the toml, but then use the newBill
 	// to "hand-craft" the example toml. So we can group values in a sensible way
 	// and provide helpful comment text
-	newBill := bill{
+	newBill := tingbill.Bill{
 		Description: "Ting Bill Split YYYY-MM-DD",
-		Devices: []device{
-			device{
+		Devices: []tingbill.Device{
+			tingbill.Device{
 				DeviceID: "1112223333",
 				Owner:    "owner1",
 			},
-			device{
+			tingbill.Device{
 				DeviceID: "2229998888",
 				Owner:    "owner2",
 			},
-			device{
+			tingbill.Device{
 				DeviceID: "3331119999",
 				Owner:    "owner1",
 			},
@@ -562,7 +503,7 @@ func parseDir(path string) {
 			log.Fatal(err)
 		}
 
-		//TODO take in each map and return a billSplit
+		//TODO take in each map and return a BillSplit
 		split, err := parseMaps(minMap, msgMap, megMap, billData)
 		if err != nil {
 			log.Fatal(err)
@@ -579,7 +520,7 @@ func parseDir(path string) {
 	}
 }
 
-func generatePDF(bs billSplit, b bill, filePath string) (string, error) {
+func generatePDF(bs tingbill.BillSplit, b tingbill.Bill, filePath string) (string, error) {
 	fmt.Printf("\nGenerating invoice...\n")
 	RoundPrecision := int32(2)
 
@@ -591,7 +532,7 @@ func generatePDF(bs billSplit, b bill, filePath string) (string, error) {
 	// Table 0: Heading - 7 rows
 	// heading: Invoice filename w/date, Device qty, Bill Total, Split Total
 	//   (for comparison), Usage subtotal, Devices Subtotal, Tax+Reg subtotal"
-	headingTable := func(b bill, bs billSplit) {
+	headingTable := func(b tingbill.Bill, bs tingbill.BillSplit) {
 		pageHeading := []string{"Invoice with date", "Devices Qty", "$Total", "$Calc", "$Usage", "$Devices", "$Tax+Reg"}
 		w := []float64{65.0, 25.0, 20.0, 20.0, 20.0, 20.0, 20.0}
 
@@ -648,7 +589,7 @@ func generatePDF(bs billSplit, b bill, filePath string) (string, error) {
 	// heading: number, nickname?, min, msg, data (KB), min%, msg%, data%
 	// Then entries for each number
 	// then entry for "Total" under nickname, and rest of sums
-	usageTable := func(b bill, bs billSplit) {
+	usageTable := func(b tingbill.Bill, bs tingbill.BillSplit) {
 		type usageTableVals struct {
 			id         string
 			owner      string
@@ -672,12 +613,12 @@ func generatePDF(bs billSplit, b bill, filePath string) (string, error) {
 
 		// Prep data
 		values := make(map[string]usageTableVals)
-		ids := b.deviceIds()
+		ids := b.DeviceIds()
 
 		for _, id := range ids {
 			values[id] = usageTableVals{
 				id,
-				b.ownerByID(id),
+				b.OwnerByID(id),
 				strconv.Itoa(bs.MinuteQty[id]),
 				strconv.Itoa(bs.MessageQty[id]),
 				strconv.Itoa(bs.MegabyteQty[id]),
@@ -726,7 +667,7 @@ func generatePDF(bs billSplit, b bill, filePath string) (string, error) {
 	// Base: $x, $y, $z
 	// Extra: etc
 	// Total: etc
-	weightedTable := func(b bill) {
+	weightedTable := func(b tingbill.Bill) {
 		type weightedTableVals struct {
 			name     string
 			minutes  string
@@ -793,7 +734,7 @@ func generatePDF(bs billSplit, b bill, filePath string) (string, error) {
 	// Table 3: Shared costs - 2
 	// TODO LATER - handle all the tax and reg costs in bill file?
 	// heading: Type, Amount
-	sharedTable := func(b bill) {
+	sharedTable := func(b tingbill.Bill) {
 		type sharedTableVals struct {
 			costType string
 			amount   string
@@ -845,7 +786,7 @@ func generatePDF(bs billSplit, b bill, filePath string) (string, error) {
 	// Table 4: Costs split - 7
 	// heading: number, Nickname, Min, Msg, Data, Shared, Total
 	// entry for each number
-	splitTable := func(bs billSplit) {
+	splitTable := func(bs tingbill.BillSplit) {
 		type splitTableVals struct {
 			id       string
 			owner    string
@@ -869,13 +810,13 @@ func generatePDF(bs billSplit, b bill, filePath string) (string, error) {
 		// Prep data
 		values := make(map[string]splitTableVals)
 
-		ids := b.deviceIds()
+		ids := b.DeviceIds()
 
 		for _, id := range ids {
 			userTotal := decimal.Sum(bs.MinuteCosts[id], bs.MessageCosts[id], bs.MegabyteCosts[id], bs.SharedCosts[id])
 			values[id] = splitTableVals{
 				id,
-				b.ownerByID(id),
+				b.OwnerByID(id),
 				bs.MinuteCosts[id].StringFixed(2),
 				bs.MessageCosts[id].StringFixed(2),
 				bs.MegabyteCosts[id].StringFixed(2),
@@ -1057,7 +998,7 @@ func main() {
 				log.Fatal(err)
 			}
 
-			//TODO take in each map and return a billSplit
+			//TODO take in each map and return a BillSplit
 			split, err := parseMaps(minMap, msgMap, megMap, billData)
 			if err != nil {
 				log.Fatal(err)
