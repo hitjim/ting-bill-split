@@ -9,6 +9,9 @@ import (
 	"github.com/shopspring/decimal"
 )
 
+// GeneratePDF accepts a tingbill.BillSplit, tingbill.Bill, filepath string, and returns a string
+// containing a filepath for the new Ting Bill Split PDF and an error.
+// The tingbill.Bill should be the same one that generated the tingbill.BillSplit.
 func GeneratePDF(bs tingbill.BillSplit, b tingbill.Bill, filePath string) (string, error) {
 	fmt.Printf("\nGenerating invoice...\n")
 	RoundPrecision := int32(2)
@@ -347,11 +350,9 @@ func GeneratePDF(bs tingbill.BillSplit, b tingbill.Bill, filePath string) (strin
 
 	err := pdf.OutputFileAndClose(filePath)
 
-	// TODO LATER - add dates to bill. For now, entering manually in the "description" field in bill.toml
+	// TODO - add dates to bill. For now, entering manually in the "description" field in bill.toml
 	// Future: generate a range off min/max dates in usage files?
 	// Or maybe just have a new field in toml?
-
-	// TODO make this take a path in, for dir-mode splitting
 
 	return filePath, err
 }

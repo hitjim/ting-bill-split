@@ -164,7 +164,7 @@ owner = "owner2"`,
 	}
 }
 
-func TestParseMaps(t *testing.T) {
+func TestCalculateSplit(t *testing.T) {
 	DecimalPrecision := int32(6)
 	cases := []struct {
 		min  map[string]int
@@ -269,7 +269,7 @@ func TestParseMaps(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		got, err := ParseMaps(c.min, c.msg, c.meg, c.bil)
+		got, err := CalculateSplit(c.min, c.msg, c.meg, c.bil)
 		if err != nil {
 			t.Errorf("ParseMaps(%v, %v, %v, %v) err, %v", c.min, c.msg, c.meg, c.bil, err)
 		}

@@ -195,8 +195,7 @@ func parseDir(path string) {
 			log.Fatal(err)
 		}
 
-		//TODO take in each map and return a BillSplit
-		split, err := tingparse.ParseMaps(minMap, msgMap, megMap, billData)
+		split, err := tingparse.CalculateSplit(minMap, msgMap, megMap, billData)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -267,7 +266,7 @@ func main() {
 			if filepath.IsAbs(fullTargetDir) {
 				parseDir(fullTargetDir)
 				// TODO - make parseDir return a split, since non-dir parsing uses a split
-				//   then handle all actions after the if/else
+				//   then handle all actions after the if/else. Maybe?
 			} else {
 				fmt.Printf("Bill directory %v is invalid\n\n", fullTargetDir)
 			}
@@ -343,8 +342,7 @@ func main() {
 				log.Fatal(err)
 			}
 
-			//TODO take in each map and return a BillSplit
-			split, err := tingparse.ParseMaps(minMap, msgMap, megMap, billData)
+			split, err := tingparse.CalculateSplit(minMap, msgMap, megMap, billData)
 			if err != nil {
 				log.Fatal(err)
 			}

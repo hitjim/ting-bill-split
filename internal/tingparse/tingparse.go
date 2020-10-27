@@ -21,6 +21,9 @@ func sliceIndex(limit int, predicate func(i int) bool) int {
 	return -1
 }
 
+// ParseBill accepts an io.Reader from a bill.toml file, and returns a tingbill.Bill
+// with relevant data, or an error. The data is later used to calculate cost splits
+// against device usage.
 func ParseBill(r io.Reader) (tingbill.Bill, error) {
 	var b tingbill.Bill
 	if _, err := toml.DecodeReader(r, &b); err != nil {
@@ -41,6 +44,9 @@ func ParseBill(r io.Reader) (tingbill.Bill, error) {
 	return b, nil
 }
 
+// ParseMinutes accepts an io.Reader from a minutes csv file, and returns a map containing
+// usage data, or an error. The map's keys are `deviceID`s and the value is how many
+// minutes that device used in the billable month.
 func ParseMinutes(minReader io.Reader) (map[string]int, error) {
 	m := make(map[string]int)
 	r := csv.NewReader(minReader)
@@ -93,6 +99,9 @@ func ParseMinutes(minReader io.Reader) (map[string]int, error) {
 	return m, nil
 }
 
+// ParseMessages accepts an io.Reader from a messages csv file, and returns a map containing
+// usage data, or an error. The map's keys are `deviceID`s and the value is how many
+// messages that device used in the billable month.
 func ParseMessages(msgReader io.Reader) (map[string]int, error) {
 	m := make(map[string]int)
 	r := csv.NewReader(msgReader)
@@ -134,6 +143,9 @@ func ParseMessages(msgReader io.Reader) (map[string]int, error) {
 	return m, nil
 }
 
+// ParseMegabytes accepts an io.Reader from a megabytes csv file, and returns a map containing
+// usage data, or an error. The map's keys are `deviceID`s and the value is how much data
+// that device used in the billable month.
 func ParseMegabytes(megReader io.Reader) (map[string]int, error) {
 	m := make(map[string]int)
 	r := csv.NewReader(megReader)
@@ -186,7 +198,10 @@ func ParseMegabytes(megReader io.Reader) (map[string]int, error) {
 	return m, nil
 }
 
-func ParseMaps(min map[string]int, msg map[string]int, meg map[string]int, bil tingbill.Bill) (tingbill.BillSplit, error) {
+// CalculateSplit accepts 3 map[string]int, one tingbill.Bill, and returns a tingbill.BillSplit
+// and an error.
+// The maps are for usage results from ParseMinutes, ParseMessages, and ParseMegabytes.
+func CalculateSplit(min map[string]int, msg map[string]int, meg map[string]int, bil tingbill.Bill) (tingbill.BillSplit, error) {
 	bs := tingbill.BillSplit{
 		make(map[string]decimal.Decimal),
 		make(map[string]int),
