@@ -1,10 +1,11 @@
-package main
+package tingparse
 
 import (
 	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/hitjim/ting-bill-split/internal/tingbill"
 	"github.com/shopspring/decimal"
 )
 
@@ -26,12 +27,12 @@ func TestParseMinutes(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		got, err := parseMinutes(strings.NewReader(c.in))
+		got, err := ParseMinutes(strings.NewReader(c.in))
 		if err != nil {
-			t.Errorf("parseMinutes(%v) err, %v", c.in, err)
+			t.Errorf("ParseMinutes(%v) err, %v", c.in, err)
 		}
 		if !cmp.Equal(got, c.want) {
-			t.Errorf("parseMinutes(%v) == %v, want %v", c.in, got, c.want)
+			t.Errorf("ParseMinutes(%v) == %v, want %v", c.in, got, c.want)
 		}
 	}
 }
@@ -54,12 +55,12 @@ func TestParseMessages(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		got, err := parseMessages(strings.NewReader(c.in))
+		got, err := ParseMessages(strings.NewReader(c.in))
 		if err != nil {
-			t.Errorf("parseMessages(%v) err, %v", c.in, err)
+			t.Errorf("ParseMessages(%v) err, %v", c.in, err)
 		}
 		if !cmp.Equal(got, c.want) {
-			t.Errorf("parseMessages(%v) == %v, want %v", c.in, got, c.want)
+			t.Errorf("ParseMessages(%v) == %v, want %v", c.in, got, c.want)
 		}
 	}
 }
@@ -83,131 +84,12 @@ func TestParseMegabytes(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		got, err := parseMegabytes(strings.NewReader(c.in))
+		got, err := ParseMegabytes(strings.NewReader(c.in))
 		if err != nil {
-			t.Errorf("parseMegabytes(%v) err, %v", c.in, err)
+			t.Errorf("ParseMegabytes(%v) err, %v", c.in, err)
 		}
 		if !cmp.Equal(got, c.want) {
-			t.Errorf("parseMegabytes(%v) == %v, want %v", c.in, got, c.want)
-		}
-	}
-}
-
-func TestIsFileMatch(t *testing.T) {
-	cases := []struct {
-		fileName string
-		nameTerm string
-		ext      string
-		want     bool
-	}{
-		{
-			"messages.csv",
-			"messages",
-			"csv",
-			true,
-		},
-		{
-			"Messages.csv",
-			"messages",
-			"csv",
-			true,
-		},
-		{
-			"Messages.cSv",
-			"messages",
-			"csv",
-			true,
-		},
-		{
-			"12xasdlkjf-_messages.csv",
-			"messages",
-			"csv",
-			true,
-		},
-		{
-			"messages12xasdlkjf-_.csv",
-			"messages",
-			"csv",
-			true,
-		},
-		{
-			"messages12xasdlkjf-_.csv",
-			"messages",
-			"csv",
-			true,
-		},
-		{
-			"12xasdlkjf-_messages12xasdlkjf-_.csv",
-			"messages",
-			"csv",
-			true,
-		},
-		{
-			"&messages.csv",
-			"messages",
-			"csv",
-			false,
-		},
-		{
-			"messagescsv",
-			"messages",
-			"csv",
-			false,
-		},
-		{
-			"messages..csv",
-			"messages",
-			"csv",
-			false,
-		},
-		{
-			"message.csv",
-			"messages",
-			"csv",
-			false,
-		},
-		{
-			"messages&.csv",
-			"messages",
-			"csv",
-			false,
-		},
-		{
-			"messages.toml",
-			"messages",
-			"csv",
-			false,
-		},
-		{
-			"messages.csv",
-			"messages",
-			"toml",
-			false,
-		},
-		{
-			"messages",
-			"messages",
-			"",
-			true,
-		},
-		{
-			"messages",
-			"messages.",
-			"",
-			false,
-		},
-		{
-			"messages",
-			"messages.messages",
-			"",
-			false,
-		},
-	}
-
-	for _, c := range cases {
-		got := isFileMatch(c.fileName, c.nameTerm, c.ext)
-		if got != c.want {
-			t.Errorf("isFileMatch(%s, %s, $s) == %v, want %v", c.fileName, c.nameTerm, c.ext, c.want)
+			t.Errorf("ParseMegabytes(%v) == %v, want %v", c.in, got, c.want)
 		}
 	}
 }
@@ -215,7 +97,7 @@ func TestIsFileMatch(t *testing.T) {
 func TestParseBill(t *testing.T) {
 	cases := []struct {
 		in   string
-		want bill
+		want tingbill.Bill
 	}{
 		{
 			`description = "First test desc"
@@ -241,7 +123,7 @@ owner = "owner2"
 [[devices]]
 deviceId = "1112220000"
 owner = "owner2"`,
-			bill{
+			tingbill.Bill{
 				Description:    "First test desc",
 				DevicesCost:    42.00,
 				Minutes:        35.00,
@@ -251,17 +133,17 @@ owner = "owner2"`,
 				ExtraMessages:  2.00,
 				ExtraMegabytes: 3.00,
 				Fees:           12.85,
-				Devices: []device{
-					device{
-						DeviceId: "1112223333",
+				Devices: []tingbill.Device{
+					tingbill.Device{
+						DeviceID: "1112223333",
 						Owner:    "owner1",
 					},
-					device{
-						DeviceId: "1112224444",
+					tingbill.Device{
+						DeviceID: "1112224444",
 						Owner:    "owner2",
 					},
-					device{
-						DeviceId: "1112220000",
+					tingbill.Device{
+						DeviceID: "1112220000",
 						Owner:    "owner2",
 					},
 				},
@@ -272,24 +154,24 @@ owner = "owner2"`,
 	}
 
 	for _, c := range cases {
-		got, err := parseBill(strings.NewReader(c.in))
+		got, err := ParseBill(strings.NewReader(c.in))
 		if err != nil {
-			t.Errorf("parseBill(%v) err, %v", c.in, err)
+			t.Errorf("ParseBill(%v) err, %v", c.in, err)
 		}
 		if !cmp.Equal(got, c.want) {
-			t.Errorf("parseBill(%v) == %v, want %v", c.in, got, c.want)
+			t.Errorf("ParseBill(%v) == %v, want %v", c.in, got, c.want)
 		}
 	}
 }
 
-func TestParseMaps(t *testing.T) {
+func TestCalculateSplit(t *testing.T) {
 	DecimalPrecision := int32(6)
 	cases := []struct {
 		min  map[string]int
 		msg  map[string]int
 		meg  map[string]int
-		bil  bill
-		want billSplit
+		bil  tingbill.Bill
+		want tingbill.BillSplit
 	}{
 		{
 			map[string]int{
@@ -304,7 +186,7 @@ func TestParseMaps(t *testing.T) {
 				"1112223333": 8001,
 				"1112224444": 2999,
 			},
-			bill{
+			tingbill.Bill{
 				Description:    "TestParseMaps",
 				DevicesCost:    42.00,
 				Minutes:        35.00,
@@ -314,24 +196,24 @@ func TestParseMaps(t *testing.T) {
 				ExtraMessages:  2.00,
 				ExtraMegabytes: 3.00,
 				Fees:           12.85,
-				Devices: []device{
-					device{
-						DeviceId: "1112223333",
+				Devices: []tingbill.Device{
+					tingbill.Device{
+						DeviceID: "1112223333",
 						Owner:    "owner1",
 					},
-					device{
-						DeviceId: "1112224444",
+					tingbill.Device{
+						DeviceID: "1112224444",
 						Owner:    "owner2",
 					},
-					device{
-						DeviceId: "1112220000",
+					tingbill.Device{
+						DeviceID: "1112220000",
 						Owner:    "owner1",
 					},
 				},
 				ShortStrawID: "1112220000",
 				Total:        118.84,
 			},
-			billSplit{
+			tingbill.BillSplit{
 				MinuteCosts: map[string]decimal.Decimal{
 					"1112220000": decimal.NewFromFloat(0).Round(DecimalPrecision),
 					"1112223333": decimal.NewFromFloat(28.8).Round(DecimalPrecision),
@@ -387,12 +269,12 @@ func TestParseMaps(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		got, err := parseMaps(c.min, c.msg, c.meg, c.bil)
+		got, err := CalculateSplit(c.min, c.msg, c.meg, c.bil)
 		if err != nil {
-			t.Errorf("parseMaps(%v, %v, %v, %v) err, %v", c.min, c.msg, c.meg, c.bil, err)
+			t.Errorf("ParseMaps(%v, %v, %v, %v) err, %v", c.min, c.msg, c.meg, c.bil, err)
 		}
 		if !cmp.Equal(got, c.want) {
-			t.Errorf("parseMaps(%v, %v, %v, %v) == %v, want %v", c.min, c.msg, c.meg, c.bil, got, c.want)
+			t.Errorf("ParseMaps(%v, %v, %v, %v) == %v, want %v", c.min, c.msg, c.meg, c.bil, got, c.want)
 		}
 	}
 }
