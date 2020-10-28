@@ -1,14 +1,13 @@
-# ting-bill-split directories
-invoices/
-
-# binaries
+# binaries old and new
 ting-bill-split
+**/tingbill
 
 # Handy spot to try with real usage files
 real-bills/
 
-# Project-specific binary files
+# Generated report files
 **/*.pdf
+**/*split.csv
 
 # Compiled Object files, Static and Dynamic libs (Shared Objects)
 *.o
