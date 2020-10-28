@@ -10,10 +10,10 @@ import (
 )
 
 // GeneratePDF accepts a tingbill.BillSplit, tingbill.Bill, filepath string, and returns a string
-// containing a filepath for the new Ting Bill Split PDF and an error.
+// containing a filepath for the newly generated Ting Bill Split PDF, and an error.
 // The tingbill.Bill should be the same one that generated the tingbill.BillSplit.
 func GeneratePDF(bs tingbill.BillSplit, b tingbill.Bill, filePath string) (string, error) {
-	fmt.Printf("\nGenerating invoice...\n")
+	fmt.Printf("\nGenerating invoice PDF...\n")
 	RoundPrecision := int32(2)
 
 	pdf := gofpdf.New("P", "mm", "A4", "")

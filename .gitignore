@@ -37,3 +37,6 @@ _testmain.go
 # Editor noise
 **.swp
 **.code-workspace
+
+# OS noise
+**/*.DS_Store
