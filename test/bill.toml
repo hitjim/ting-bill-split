@@ -1,4 +1,4 @@
-description = "Ting Bill YYYY-MM-DD"
+description = "Ting Bill Split YYYY-MM-DD"
 
 total = 118.84
 
@@ -10,7 +10,7 @@ megabytes = 20.00
 
 extraMinutes = 1.00
 extraMessages = 2.00
-extraMegabytes = 3.00
+extraMegabytes = 4.00
 
 fees = 28.74
 

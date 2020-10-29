@@ -10,18 +10,18 @@ import (
 )
 
 // GeneratePDF accepts a tingbill.BillSplit, tingbill.Bill, filepath string, and returns a string
-// containing a filepath for the new Ting Bill Split PDF and an error.
+// containing a filepath for the newly generated Ting Bill Split PDF, and an error.
 // The tingbill.Bill should be the same one that generated the tingbill.BillSplit.
 func GeneratePDF(bs tingbill.BillSplit, b tingbill.Bill, filePath string) (string, error) {
-	fmt.Printf("\nGenerating invoice...\n")
-	RoundPrecision := int32(2)
+	fmt.Printf("\nGenerating invoice PDF...\n")
+	const RoundPrecision = int32(2)
 
 	pdf := gofpdf.New("P", "mm", "A4", "")
 	pdf.AddPage()
 	pdf.SetFont("Arial", "B", 10)
 	pdf.SetXY(10, 20)
 
-	// Table 0: Heading - 7 rows
+	// Table 0: Heading - 7 columns, 2 rows
 	// heading: Invoice filename w/date, Device qty, Bill Total, Split Total
 	//   (for comparison), Usage subtotal, Devices Subtotal, Tax+Reg subtotal"
 	headingTable := func(b tingbill.Bill, bs tingbill.BillSplit) {
@@ -77,11 +77,13 @@ func GeneratePDF(bs tingbill.BillSplit, b tingbill.Bill, filePath string) (strin
 	}
 	headingTable(b, bs)
 
-	// Table 1: Usage - 8 rows
+	// Table 1: Usage - 8 columns, <deviceID qty>+1 rows
 	// heading: number, nickname?, min, msg, data (KB), min%, msg%, data%
 	// Then entries for each number
 	// then entry for "Total" under nickname, and rest of sums
 	usageTable := func(b tingbill.Bill, bs tingbill.BillSplit) {
+		// making this type made it just a little more readable once you start populating cells,
+		// especially needing to respect the order deviceIDs are entered on bill.toml
 		type usageTableVals struct {
 			id         string
 			owner      string
@@ -120,8 +122,6 @@ func GeneratePDF(bs tingbill.BillSplit, b tingbill.Bill, filePath string) (strin
 			}
 		}
 
-		// TODO: turn this into some kind of getMapKeys if it gets too crazy
-
 		// Print data
 		pdf.SetXY(10, pdf.GetY())
 		var wi int
@@ -154,11 +154,11 @@ func GeneratePDF(bs tingbill.BillSplit, b tingbill.Bill, filePath string) (strin
 	}
 	usageTable(b, bs)
 
-	// Table 2: Weighted costs - 3 rows
-	// heading: Weighted Costs: Minutes, Messages, Data
+	// Table 2: Weighted Cost Type - 4 columns, 4 rows (+1 for cell to right of final column)
+	// heading: Weighted: Minutes, Messages, Data
 	// Base: $x, $y, $z
 	// Extra: etc
-	// Total: etc
+	// Total: etc (sum of Min, Msg, Data gets tacked on as extra cell/col on final row)
 	weightedTable := func(b tingbill.Bill) {
 		type weightedTableVals struct {
 			name     string
@@ -167,7 +167,7 @@ func GeneratePDF(bs tingbill.BillSplit, b tingbill.Bill, filePath string) (strin
 			data     string
 		}
 
-		wtheading := []string{"Cost Type", "Minutes", "Messages", "Data"}
+		wtheading := []string{"Weighted", "Minutes", "Messages", "Data"}
 		pdf.SetXY(10, pdf.GetY()+5)
 
 		// Print heading
@@ -223,16 +223,18 @@ func GeneratePDF(bs tingbill.BillSplit, b tingbill.Bill, filePath string) (strin
 	}
 	weightedTable(b)
 
-	// Table 3: Shared costs - 2
-	// TODO LATER - handle all the tax and reg costs in bill file?
-	// heading: Type, Amount
+	// Table 3: Shared costs - 2 columns, 4 rows
+	// heading: Shared, Amount
+	// Devices: $
+	// Tax & Reg: $
+	// Total: $
 	sharedTable := func(b tingbill.Bill) {
 		type sharedTableVals struct {
 			costType string
 			amount   string
 		}
 
-		stheading := []string{"Type", "Amount"}
+		stheading := []string{"Shared", "Amount"}
 		pdf.SetXY(10, pdf.GetY()+5)
 
 		// Print heading
@@ -275,7 +277,7 @@ func GeneratePDF(bs tingbill.BillSplit, b tingbill.Bill, filePath string) (strin
 	}
 	sharedTable(b)
 
-	// Table 4: Costs split - 7
+	// Table 4: Costs split - 7 columns, <deviceID qty>+1 rows
 	// heading: number, Nickname, Min, Msg, Data, Shared, Total
 	// entry for each number
 	splitTable := func(bs tingbill.BillSplit) {

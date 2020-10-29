@@ -9,6 +9,8 @@ import (
 	"path/filepath"
 	"regexp"
 
+	"github.com/hitjim/ting-bill-split/internal/tingcsv"
+
 	"github.com/hitjim/ting-bill-split/internal/tingbill"
 	"github.com/hitjim/ting-bill-split/internal/tingparse"
 	"github.com/hitjim/ting-bill-split/internal/tingpdf"
@@ -37,7 +39,7 @@ func createNewBillingDir(args []string) {
 			createBillFile(newDirName)
 			fmt.Printf("\n1. Enter values for the bill.toml file in new directory `%s`\n", newDirName)
 			fmt.Println("2. Add csv files for minutes, message, megabytes in the new directory")
-			fmt.Printf("3. run `ting-bill-split dir %s`\n", newDirName)
+			fmt.Printf("3. run `tingbill dir %s`\n", newDirName)
 		} else {
 			fmt.Println("Directory already exists.")
 		}
@@ -201,19 +203,25 @@ func parseDir(path string) {
 		}
 
 		pdfFilePath := filepath.Join(path, billData.Description+".pdf")
-
 		invoiceName, err := tingpdf.GeneratePDF(split, billData, pdfFilePath)
 		if err != nil {
-			fmt.Printf("Failed to generate invoice at path: %v\n\n", pdfFilePath)
+			fmt.Printf("Failed to generate PDF invoice at path: %v\n\n", pdfFilePath)
 			log.Fatal(err)
 		}
-		fmt.Printf("Invoice generation complete: %s\n\n", invoiceName)
+		fmt.Printf("PDF invoice generation complete: %s\n\n", invoiceName)
+
+		csvFilePath := filepath.Join(path, billData.Description+"_report.csv")
+		invoiceName, err = tingcsv.GenerateCSV(split, billData, csvFilePath)
+		if err != nil {
+			fmt.Printf("Failed to generate CSV record at path: %v\n\n", csvFilePath)
+			log.Fatal(err)
+		}
 	}
 }
 
 func printUsageHelp() {
-	fmt.Println("Use `ting-bill-split new` or `ting-bill-split new <billing-directory>` to create a new billing directory")
-	fmt.Println("\nUse `ting-bill-split dir <billing-directory>` to run on a directory containing a `bill.toml`, and CSV files for minutes, messages, and megabytes usage.")
+	fmt.Println("Use `tingbill new` or `tingbill new <billing-directory>` to create a new billing directory")
+	fmt.Println("\nUse `tingbill dir <billing-directory>` to run on a directory containing a `bill.toml`, and CSV files for minutes, messages, and megabytes usage.")
 	fmt.Println("  Each of these files must contain their type somewhere in the filename - i.e. `YYYYMMDD-messages.csv` or `messages-potatosalad.csv` or whatever.")
 }
 
