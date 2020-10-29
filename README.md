@@ -1,5 +1,5 @@
 # ting-bill-split / `tingbill`
-Split your Ting bills based on usage for each device.
+Split your Ting bills based on usage for each device. Generates ***both*** PDF and CSV reports by default.
 
 ## Summary
 Ting provides cellular service in the United States using Sprint, T-Mobile, and Verizon networks - [Wikipedia](https://en.wikipedia.org/wiki/Ting_Inc.)
@@ -74,13 +74,13 @@ The default method for splitting bills is to work with directories in "batch mod
       ```
       tingbill dir .
       ```
-1. Review the resulting `.pdf` file in the bill split directory you chose.
+1. Review the resulting `.pdf` and `.csv` report files in the bill split directory you chose.
 1. For each following month's bill, you can either:
    * Start again at **_step #2_**
    * Make a new directory manually, copy the previous month's `bill.toml` into it, start at **_step #3_**
 
 ## Breakdown of `bill.toml` Info
-* **`description`** - Ideally this is a unique string of characters, I recommend including the billing date. This description is used as part of the resulting `.pdf` file after calculating the bill split.
+* **`description`** - Ideally this is a unique string of characters, I recommend including the billing date. This description is used as part of the resulting `.pdf` and `.csv` report files after calculating the bill split.
 * **`deviceIds`** - Each string is a unique phone number on the Ting plan.
    * **_NOTE_**: do NOT use dashes. _Example_: `"1112223333"`, not `"111-222-3333"`.
 * `shortStrawId` - In the unlikely event a cost can't be split evenly between lines, this is the line that will absorb that cost. It's usually $0.01, and I usually use the plan owner's number (probably you!). This is due to math, our inability to split pennies in half, and partially a personal judgement call based on complexity and ROI :)
