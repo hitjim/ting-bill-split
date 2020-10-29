@@ -208,7 +208,7 @@ func parseDir(path string) {
 			fmt.Printf("Failed to generate PDF invoice at path: %v\n\n", pdfFilePath)
 			log.Fatal(err)
 		}
-		fmt.Printf("PDF invoice generation complete: %s\n\n", invoiceName)
+		fmt.Printf("PDF invoice generation complete: %s\n", invoiceName)
 
 		csvFilePath := filepath.Join(path, billData.Description+"_report.csv")
 		invoiceName, err = tingcsv.GenerateCSV(split, billData, csvFilePath)
@@ -216,6 +216,7 @@ func parseDir(path string) {
 			fmt.Printf("Failed to generate CSV record at path: %v\n\n", csvFilePath)
 			log.Fatal(err)
 		}
+		fmt.Printf("CSV invoice generation complete: %s\n\n", invoiceName)
 	}
 }
 
