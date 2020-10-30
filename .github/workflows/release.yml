@@ -18,6 +18,7 @@ jobs:
           GOOS: linux
           EXTRA_FILES: "README.md LICENSE"
           CMD_PATH: "./cmd/tingbill"
+          GO111MODULE: "on"
 
   release-linux-amd64:
     name: release linux/amd64
@@ -32,6 +33,7 @@ jobs:
           GOOS: linux
           EXTRA_FILES: "README.md LICENSE"
           CMD_PATH: "./cmd/tingbill"
+          GO111MODULE: "on"
 
   release-linux-arm:
     name: release linux/386
@@ -46,6 +48,7 @@ jobs:
           GOOS: linux
           EXTRA_FILES: "README.md LICENSE"
           CMD_PATH: "./cmd/tingbill"
+          GO111MODULE: "on"
 
   release-linux-arm64:
     name: release linux/amd64
@@ -60,6 +63,7 @@ jobs:
           GOOS: linux
           EXTRA_FILES: "README.md LICENSE"
           CMD_PATH: "./cmd/tingbill"
+          GO111MODULE: "on"
 
   release-darwin-amd64:
     name: release darwin/amd64
@@ -74,6 +78,7 @@ jobs:
           GOOS: darwin
           EXTRA_FILES: "README.md LICENSE"
           CMD_PATH: "./cmd/tingbill"
+          GO111MODULE: "on"
 
   release-windows-386:
     name: release windows/386
@@ -88,6 +93,7 @@ jobs:
           GOOS: windows
           EXTRA_FILES: "README.md LICENSE"
           CMD_PATH: "./cmd/tingbill"
+          GO111MODULE: "on"
 
   release-windows-amd64:
     name: release windows/amd64
@@ -102,3 +108,4 @@ jobs:
           GOOS: windows
           EXTRA_FILES: "README.md LICENSE"
           CMD_PATH: "./cmd/tingbill"
+          GO111MODULE: "on"
