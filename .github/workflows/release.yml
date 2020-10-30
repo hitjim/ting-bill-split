@@ -11,13 +11,13 @@ jobs:
     steps:
       - uses: actions/checkout@master
       - name: compile and release
-        uses: ngs/go-release.action@v1.0.2
+        uses: sqs/go-release.action@v1.1.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GOARCH: "386"
           GOOS: linux
           EXTRA_FILES: "README.md LICENSE"
-          CMD_PATH: "./cmd/tingbill"
+          PACKAGE: "./cmd/tingbill"
           GO111MODULE: "on"
 
   release-linux-amd64:
@@ -26,13 +26,13 @@ jobs:
     steps:
       - uses: actions/checkout@master
       - name: compile and release
-        uses: ngs/go-release.action@v1.0.2
+        uses: sqs/go-release.action@v1.1.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GOARCH: amd64
           GOOS: linux
           EXTRA_FILES: "README.md LICENSE"
-          CMD_PATH: "./cmd/tingbill"
+          PACKAGE: "./cmd/tingbill"
           GO111MODULE: "on"
 
   release-linux-arm:
@@ -41,13 +41,13 @@ jobs:
     steps:
       - uses: actions/checkout@master
       - name: compile and release
-        uses: ngs/go-release.action@v1.0.2
+        uses: sqs/go-release.action@v1.1.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GOARCH: "arm"
           GOOS: linux
           EXTRA_FILES: "README.md LICENSE"
-          CMD_PATH: "./cmd/tingbill"
+          PACKAGE: "./cmd/tingbill"
           GO111MODULE: "on"
 
   release-linux-arm64:
@@ -56,13 +56,13 @@ jobs:
     steps:
       - uses: actions/checkout@master
       - name: compile and release
-        uses: ngs/go-release.action@v1.0.2
+        uses: sqs/go-release.action@v1.1.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GOARCH: arm64
           GOOS: linux
           EXTRA_FILES: "README.md LICENSE"
-          CMD_PATH: "./cmd/tingbill"
+          PACKAGE: "./cmd/tingbill"
           GO111MODULE: "on"
 
   release-darwin-amd64:
@@ -71,13 +71,13 @@ jobs:
     steps:
       - uses: actions/checkout@master
       - name: compile and release
-        uses: ngs/go-release.action@v1.0.2
+        uses: sqs/go-release.action@v1.1.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GOARCH: amd64
           GOOS: darwin
           EXTRA_FILES: "README.md LICENSE"
-          CMD_PATH: "./cmd/tingbill"
+          PACKAGE: "./cmd/tingbill"
           GO111MODULE: "on"
 
   release-windows-386:
@@ -86,13 +86,13 @@ jobs:
     steps:
       - uses: actions/checkout@master
       - name: compile and release
-        uses: ngs/go-release.action@v1.0.2
+        uses: sqs/go-release.action@v1.1.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GOARCH: "386"
           GOOS: windows
           EXTRA_FILES: "README.md LICENSE"
-          CMD_PATH: "./cmd/tingbill"
+          PACKAGE: "./cmd/tingbill"
           GO111MODULE: "on"
 
   release-windows-amd64:
@@ -101,11 +101,11 @@ jobs:
     steps:
       - uses: actions/checkout@master
       - name: compile and release
-        uses: ngs/go-release.action@v1.0.2
+        uses: sqs/go-release.action@v1.1.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GOARCH: amd64
           GOOS: windows
           EXTRA_FILES: "README.md LICENSE"
-          CMD_PATH: "./cmd/tingbill"
+          PACKAGE: "./cmd/tingbill"
           GO111MODULE: "on"
