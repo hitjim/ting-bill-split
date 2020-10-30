@@ -1,0 +1,16 @@
+---
+
+extends: default
+
+yaml-files:
+  - '*.yaml'
+  - '*.yml'
+  - '.yamllint'
+
+rules:
+  truthy:
+    allowed-values: ['true', 'false']
+    check-keys: false
+
+  line-length:
+    max: 120

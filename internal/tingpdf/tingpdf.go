@@ -341,7 +341,6 @@ func GeneratePDF(bs tingbill.BillSplit, b tingbill.Bill, filePath string) (strin
 			pdf.CellFormat(w[wi], 7, row.shared, "1", 0, "R", false, 0, "")
 			wi++
 			pdf.CellFormat(w[wi], 7, row.total, "1", 0, "R", false, 0, "")
-			wi++
 			if i < valuesBound {
 				pdf.SetXY(10, pdf.GetY()+7)
 			}
