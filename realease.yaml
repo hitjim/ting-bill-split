@@ -1,7 +1,12 @@
 ---
 name: Build Release
 
-on: release
+on:
+  push:
+    tags:
+      - v*
+    braches:
+      - main
 
 jobs:
 
