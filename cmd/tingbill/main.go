@@ -35,7 +35,9 @@ func createNewBillingDir(args []string) {
 		}
 		if _, err := os.Stat(newDirName); os.IsNotExist(err) {
 			fmt.Println("Creating a directory for a new billing period.")
-			os.MkdirAll(newDirName, os.ModePerm)
+			if err := os.MkdirAll(newDirName, os.ModePerm); err != nil {
+				log.Fatal("Failed to create new billing directory: ", err)
+			}
 			createBillFile(newDirName)
 			fmt.Printf("\n1. Enter values for the bill.toml file in new directory `%s`\n", newDirName)
 			fmt.Println("2. Add csv files for minutes, message, megabytes in the new directory")

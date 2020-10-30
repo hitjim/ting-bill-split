@@ -200,19 +200,19 @@ func ParseMegabytes(megReader io.Reader) (map[string]int, error) {
 
 // CalculateSplit accepts 3 map[string]int, one tingbill.Bill, and returns a tingbill.BillSplit
 // and an error.
-// The maps are for usage results from ParseMinutes, ParseMessages, and ParseMegabytes.
+// The maps are for usage results from ParseMinutes, ParseMessages
 func CalculateSplit(min map[string]int, msg map[string]int, meg map[string]int, bil tingbill.Bill) (tingbill.BillSplit, error) {
 	bs := tingbill.BillSplit{
-		make(map[string]decimal.Decimal),
-		make(map[string]int),
-		make(map[string]decimal.Decimal),
-		make(map[string]decimal.Decimal),
-		make(map[string]int),
-		make(map[string]decimal.Decimal),
-		make(map[string]decimal.Decimal),
-		make(map[string]int),
-		make(map[string]decimal.Decimal),
-		make(map[string]decimal.Decimal),
+		MinuteCosts:     make(map[string]decimal.Decimal),
+		MinuteQty:       make(map[string]int),
+		MinutePercent:   make(map[string]decimal.Decimal),
+		MessageCosts:    make(map[string]decimal.Decimal),
+		MessageQty:      make(map[string]int),
+		MessagePercent:  make(map[string]decimal.Decimal),
+		MegabyteCosts:   make(map[string]decimal.Decimal),
+		MegabyteQty:     make(map[string]int),
+		MegabytePercent: make(map[string]decimal.Decimal),
+		SharedCosts:     make(map[string]decimal.Decimal),
 	}
 	var usedMin, usedMsg, usedMeg int
 	DecimalPrecision := int32(6)
