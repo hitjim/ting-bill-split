@@ -1,11 +1,7 @@
 ---
 name: Build Release
 
-on:
-  push:
-    tags:
-      - v*
-    branches: [main]
+on: release
 
 jobs:
 
