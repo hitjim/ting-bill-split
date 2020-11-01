@@ -12,19 +12,35 @@ With `tingbill`, the plan owner can use the Ting-provided `*.csv` each month to 
 This guide assumes:
 * You can view the "Monthly bill" `.pdf` for a given billing month from [Ting's "Billing history" page](https://ting.com/account/bill_history)
 * You can download `.csv` files for `minutes`, `messages`, `megabytes`, available by clicking on the "Monthly bill" link for the month, then the download arrow under the "CSV" column.
-* You have sufficient permissions on your computer required to [install and run Go programs](https://golang.org/doc/install) (you probably do!)
+* You can either...
+  * Run one of the pre-compiled binaries on the [Releases Page](https://github.com/hitjim/ting-bill-split/releases)
+  * To install from source: You have sufficient permissions on your computer required to [install and run Go programs](https://golang.org/doc/install) (you probably do!)
 
 ## Installing
-In the future, I might supply pre-compiled binaries so that you don't need to install Go.
 
 ### First Installation
+
+#### Using Pre-compiled Binaries
+You can find standalone executables for most major operating systems on the [Releases Page](https://github.com/hitjim/ting-bill-split/releases). For MacOS, look for the files with `darwin` in the name.
+1. Download a single executable binary file, or release `.tgz` archive for your operating system.
+1. Move or extract the executable file to your desired location.
+   1. Placing it in your `PATH` will allow usage from any location
+   1. Rename to `tingbill` or some shorter filename if desired
+
+#### From source, using Go
 1. [Install Go for your operating system](https://golang.org/doc/install)
 1. In a terminal, type 
    ```
    go get github.com/hitjim/ting-bill-split/cmd/tingbill
    ```
 
-### Installing Updates
+### Getting Updates
+
+#### Using Pre-compiled Binaries
+1. Delete the existing binary
+1. Follow the original steps for installation again for the new version
+
+#### From source, using Go
 In a terminal, type
 ```
 go get -u github.com/hitjim/ting-bill-split/cmd/tingbill
