@@ -1,10 +1,16 @@
+# EOL / UNSUPPORTED / ARCHIVED
 # ting-bill-split / `tingbill`
-Split your Ting bills based on usage for each device. Generates ***both*** PDF and CSV reports by default.
+## Sorry, Ting no longer charges per line, or provides CSVs to support this behavior.
+Further, my personal need for this project has long since lapsed.
+
+For now, I only leave this project open for personal reference.
+
+~~Split your Ting bills based on usage for each device. Generates ***both*** PDF and CSV reports by default.~~
 
 ## Summary
 Ting provides cellular service in the United States using Sprint, T-Mobile, and Verizon networks - [Wikipedia](https://en.wikipedia.org/wiki/Ting_Inc.)
 
-Many families put all their lines on the same plan to share savings, but Ting's billing system doesn't provide guidance on how to proportionately split monthly bills based on each line's usage. The basic solution is to split the monthly total cost evenly by number of lines. Unfortunately, this would mean one line that streams videos all the time might negate the savings of frugal data usage by others on the plan.
+~~Many families put all their lines on the same plan to share savings, but Ting's billing system doesn't provide guidance on how to proportionately split monthly bills based on each line's usage. The basic solution is to split the monthly total cost evenly by number of lines. Unfortunately, this would mean one line that streams videos all the time might negate the savings of frugal data usage by others on the plan.~~
 
 With `tingbill`, the plan owner can use the Ting-provided `*.csv` each month to split the bill more intelligently. Shared costs are split _**evenly**_ between all lines, and the usage-based costs are split _**proportionately**_.
 
